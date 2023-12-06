@@ -148,4 +148,4 @@ echo 'Part 1: ' . $solutionOne . PHP_EOL;
 echo 'Part 2: ' . $solutionTwo . PHP_EOL;
 echo PHP_EOL;
 echo 'Completed in ' . number_format(($end - $start) * 1000, 2) . ' milliseconds!' . PHP_EOL;
-echo '*-------------------------*';
+echo '*-------------------------*' . PHP_EOL;
