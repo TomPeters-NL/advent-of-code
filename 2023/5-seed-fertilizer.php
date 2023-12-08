@@ -18,7 +18,8 @@ class Map
 
     public function addRange(Range $range): void
     {
-        $this->ranges[] = $range;
+        $this->ranges[$range->source] = $range;
+        ksort($this->ranges);
     }
 
     public function getDestination(int $value): int
@@ -33,6 +34,18 @@ class Map
 
         return $destination;
     }
+
+    public function getDestinationRanges(Range $sourceRange): array
+    {
+        $destinations = [];
+        $sourceStart = $sourceRange->destination;
+        $sourceLength = $sourceRange->rangeLength;
+
+        foreach($this->ranges as $range) {
+            $rangeStart = $range->source;
+            $rangeLength = $range->rangeLength;
+        }
+    }
 }
 
 class Range
@@ -45,7 +58,7 @@ class Range
     {
         $this->source = (int)$source;
         $this->destination = (int)$destination;
-        $this->rangeLength = (int)$rangeLength;
+        $this->rangeLength = (int)$rangeLength - 1;
     }
 
     public function getDestination(int $value): int
@@ -72,6 +85,26 @@ function getSeeds(array $input): array
     $seeds = array_map('intval', $seeds[0]);
 
     return $seeds;
+}
+
+/**
+ * @param string[] $input
+ *
+ * @return Range[]
+ */
+function getSeedsRanges(array $input): array
+{
+    $seedLines = $input[0];
+
+    $seedRanges = [];
+    preg_match_all('/\d+ \d+/', $seedLines, $seeds);
+    foreach ($seeds[0] as $seed) {
+        list($seedRangeStart, $seedRangeLength) = explode(' ', trim($seed));
+
+        $seedRanges[] = new Range($seedRangeStart, $seedRangeStart, $seedRangeLength);
+    }
+
+    return $seedRanges;
 }
 
 /**
@@ -135,7 +168,8 @@ function partOne(array $input): int
  */
 function partTwo(array $input): int
 {
-    return 80085;
+    $seedRanges = getSeedsRanges($input);
+    $maps = getMaps($input);
 }
 
 $start = microtime(true);

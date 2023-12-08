@@ -2,22 +2,6 @@
 
 $input = file('./input/6.txt');
 
-/**
- * @return int[]
- */
-function calculateDistance(int $raceDuration): array
-{
-    $distances = [];
-    for ($chargeTime = 0; $chargeTime <= $raceDuration; $chargeTime++) {
-        $speed = $chargeTime; // 1 ms of charging increases speed by 1 mm/ms.
-        $distance = $speed * ($raceDuration - $chargeTime);
-
-        $distances[$chargeTime] = $distance;
-    }
-
-    return $distances;
-}
-
 function calculateViableStrategies(int $time, int $distance): int
 {
     $minimumChargingTime = ($time - sqrt(($time ** 2) - (4 * $distance))) / 2;
