@@ -2,13 +2,6 @@
 
 $input = file('./input/7.txt');
 
-function getCardStrength(string $card, bool $jokers = false): int
-{
-    $distribution = $jokers === false ? 'AKQJT98765432' : 'AKQT98765432J';
-
-    return strpos($distribution, $card);
-}
-
 function getHandStrength(string $hand, bool $jokers = false): int
 {
     $list = count_chars($hand, 1);
@@ -44,8 +37,10 @@ function solveHandTie(array $handDataA, array $handDataB, bool $jokers = false):
         $cardB = $handB[$i];
 
         if ($cardA !== $cardB) {
-            $strengthA = getCardStrength($cardA, $jokers);
-            $strengthB = getCardStrength($cardB, $jokers);
+            $distribution = $jokers === false ? 'AKQJT98765432' : 'AKQT98765432J';
+
+            $strengthA = strpos($distribution, $cardA);
+            $strengthB = strpos($distribution, $cardB);
 
             return $strengthA > $strengthB ? 1 : -1;
         }
