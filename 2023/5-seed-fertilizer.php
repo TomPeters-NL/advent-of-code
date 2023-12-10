@@ -2,87 +2,33 @@
 
 $input = file('./input/5.txt');
 
-class Map
-{
-    public string $name;
-
-    /**
-     * @var Range[] $ranges
-     */
-    public array $ranges;
-
-    public function __construct(string $name)
-    {
-        $this->name = $name;
-    }
-
-    public function addRange(Range $range): void
-    {
-        $this->ranges[$range->source] = $range;
-        ksort($this->ranges);
-    }
-
-    public function getDestination(int $value): int
-    {
-        foreach ($this->ranges as $range) {
-            $destination = $range->getDestination($value);
-
-            if ($destination !== $value) {
-                break;
-            }
-        }
-
-        return $destination;
-    }
-
-    public function getDestinationRanges(Range $sourceRange): array
-    {
-        $destinations = [];
-        $sourceStart = $sourceRange->destination;
-        $sourceLength = $sourceRange->rangeLength;
-
-        foreach($this->ranges as $range) {
-            $rangeStart = $range->source;
-            $rangeLength = $range->rangeLength;
-        }
-    }
-}
-
-class Range
-{
-    public int $source;
-    public int $destination;
-    public int $rangeLength;
-
-    public function __construct(int|string $source, int|string $destination, int|string $rangeLength)
-    {
-        $this->source = (int)$source;
-        $this->destination = (int)$destination;
-        $this->rangeLength = (int)$rangeLength - 1;
-    }
-
-    public function getDestination(int $value): int
-    {
-        $destination = $value;
-        if ($value >= $this->source && $value < $this->source + $this->rangeLength) {
-            $destination = $this->destination + ($value - $this->source);
-        }
-
-        return $destination;
-    }
-}
-
 /**
  * @param string[] $input
  *
  * @return int[]
  */
-function getSeeds(array $input): array
+function getSeeds(array $input, bool $ranges = false): array
 {
-    $seedLines = $input[0];
+    $row = $input[0];
 
-    preg_match_all('/\d+/', $seedLines, $seeds);
-    $seeds = array_map('intval', $seeds[0]);
+    if ($ranges === false) {
+        preg_match_all('/\d+/', $row, $matches);
+
+        $seeds = array_map(fn ($x) => intval(trim($x)), $matches[0]);
+    } else {
+        preg_match_all('/\d+ \d+/', $row, $matches);
+        array_walk($matches[0], 'trim');
+
+        $seeds = [];
+        foreach ($matches[0] as $seedData) {
+            list($seedStart, $rangeLength) = explode(' ', $seedData);
+
+            $seeds[] = [
+                (int) $seedStart,                       // Start of seed range.
+                (int) $seedStart + $rangeLength - 1,    // End of seed range.
+            ];
+        }
+    }
 
     return $seeds;
 }
@@ -90,54 +36,62 @@ function getSeeds(array $input): array
 /**
  * @param string[] $input
  *
- * @return Range[]
- */
-function getSeedsRanges(array $input): array
-{
-    $seedLines = $input[0];
-
-    $seedRanges = [];
-    preg_match_all('/\d+ \d+/', $seedLines, $seeds);
-    foreach ($seeds[0] as $seed) {
-        list($seedRangeStart, $seedRangeLength) = explode(' ', trim($seed));
-
-        $seedRanges[] = new Range($seedRangeStart, $seedRangeStart, $seedRangeLength);
-    }
-
-    return $seedRanges;
-}
-
-/**
- * @param string[] $input
- *
- * @return Map[]
+ * @return int[][]
  */
 function getMaps(array $input): array
 {
-    $mapLines = array_slice($input, 2);
+    $rows = array_slice($input, 2);
 
     $maps = [];
-    $mapIndex = 0;
-    foreach ($mapLines as $mapLine) {
-        $line = trim($mapLine);
+    $header = null;
+    foreach ($rows as $row) {
+        $trimmedRow = trim($row);
 
-        $isSeparator = empty($line);
-        $isNextMap = str_contains($line, 'map');
+        $isEmpty = empty($trimmedRow);
+        $isHeader = str_contains($trimmedRow, 'map');
 
-        if ($isSeparator === false && $isNextMap === false) {
-            list($destination, $source, $rangeLength) = explode(' ', $line);
-            $range = new Range($source, $destination, $rangeLength);
+        if ($isHeader === true) {
+            $header = explode(' ', $trimmedRow)[0];
 
-            $maps[$mapIndex]->addRange($range);
-        } elseif ($isSeparator === false  && $isNextMap === true) {
-            $mapIndex++;
+            $maps[$header] = [];
+        } elseif ($isEmpty === false) {
+            list($destination, $source, $rangeLength) = explode(' ', $row);
 
-            $mapName = explode(' ', $line)[0];
-            $maps[$mapIndex] = new Map($mapName);
+            $maps[$header][] = [
+                (int) $source,                          // Start of source range.
+                (int) $source + $rangeLength - 1,       // End of source range.
+                (int) $destination,                     // Start of destination range.
+                (int) $destination + $rangeLength - 1,  // End of destination range.
+                (int) $rangeLength,                     // Length of range.
+            ];
         }
     }
 
+    foreach ($maps as $header => &$map) {
+        usort($map, fn($x, $y) => $x[0] <=> $y[0]);
+    }
+
     return $maps;
+}
+
+function isPartialTopOverlap(int $inputStart, int $inputEnd, int $sourceStart, int $sourceEnd): bool
+{
+    return $inputStart > $sourceStart && $inputStart <= $sourceEnd && $inputEnd > $sourceEnd;
+}
+
+function isPartialBottomOverlap(int $inputStart, int $inputEnd, int $sourceStart, int $sourceEnd): bool
+{
+    return $inputStart < $sourceStart && $inputEnd < $sourceEnd && $inputEnd >= $sourceStart;
+}
+
+function isCompleteInnerOverlap(int $inputStart, int $inputEnd, int $sourceStart, int $sourceEnd): bool
+{
+    return $inputStart <= $sourceStart && $inputEnd > $sourceEnd || $inputStart < $sourceStart && $inputEnd >= $sourceEnd;
+}
+
+function isCompleteOuterOverlap(int $inputStart, int $inputEnd, int $sourceStart, int $sourceEnd): bool
+{
+    return $inputStart >= $sourceStart && $inputEnd <= $sourceEnd;
 }
 
 /**
@@ -148,19 +102,25 @@ function partOne(array $input): int
     $seeds = getSeeds($input);
     $maps = getMaps($input);
 
-    $destinations = [];
-    foreach ($seeds as $seed) {
-        $latestSource = $seed;
+    $locations = [];
+    foreach ($seeds as $index => $seed) {
+        $source = $seed;
 
         foreach ($maps as $map) {
-            $destination = $map->getDestination($latestSource);
+            $locations[$index] = $source;
 
-            $latestSource = $destination;
-            $destinations[$map->name][] = $destination;
+            foreach ($map as [$sourceStart, $sourceEnd, $destinationStart, $destinationEnd, $rangeLength]) {
+                if ($source >= $sourceStart && $source <= $sourceEnd) {
+                    $locations[$index] = $destinationStart + ($source - $sourceStart);
+                    break;
+                }
+            }
+
+            $source = $locations[$index];
         }
     }
 
-    return min($destinations['humidity-to-location']);
+    return min($locations);
 }
 
 /**
@@ -168,8 +128,85 @@ function partOne(array $input): int
  */
 function partTwo(array $input): int
 {
-    $seedRanges = getSeedsRanges($input);
+    $seeds = getSeeds($input, true);
     $maps = getMaps($input);
+
+    $header = $inputHeader = 'seeds';
+    $inputRanges = [$header => $seeds];
+
+    foreach ($maps as $header => $map) { // Loop through the various maps.
+        foreach ($map as [$sourceStart, $sourceEnd, $destinationStart, $destinationEnd, $rangeLength]) { // Loop through the map ranges.
+            foreach ($inputRanges[$inputHeader] as $index => [$inputStart, $inputEnd]) { // Loop through the currently relevant input ranges.
+
+                if (isPartialTopOverlap($inputStart, $inputEnd, $sourceStart, $sourceEnd) === true) {
+                    $destinationRangeStart = $destinationEnd - ($sourceEnd - $inputStart);
+                    $destinationRangeEnd = $destinationEnd;
+
+                    $remainingRangeStart = $sourceEnd + 1;
+                    $remainingRangeEnd = $inputEnd;
+
+                    $inputRanges[$header][] = [$destinationRangeStart, $destinationRangeEnd]; // Register the transformed range for the next round.
+                    $inputRanges[$inputHeader][$index] = [$remainingRangeStart, $remainingRangeEnd]; // Update the current input ranges.
+                }
+
+                if (isPartialBottomOverlap($inputStart, $inputEnd, $sourceStart, $sourceEnd) === true) {
+                    $destinationRangeStart = $destinationStart;
+                    $destinationRangeEnd = $destinationStart + ($inputEnd - $sourceStart);
+
+                    $remainingRangeStart = $inputStart;
+                    $remainingRangeEnd = $sourceStart - 1;
+
+                    $inputRanges[$header][] = [$destinationRangeStart, $destinationRangeEnd]; // Register the transformed range for the next round.
+                    $inputRanges[$inputHeader][$index] = [$remainingRangeStart, $remainingRangeEnd]; // Update the current input ranges.
+                }
+
+                if (isCompleteInnerOverlap($inputStart, $inputEnd, $sourceStart, $sourceEnd) === true) {
+                    $destinationRangeStart = $destinationStart;
+                    $destinationRangeEnd = $destinationEnd;
+
+                    if ($inputStart < $sourceStart) { // Update the current input ranges.
+                        $remainingTopRangeStart = $inputStart;
+                        $remainingTopRangeEnd = $sourceStart - 1;
+                        $inputRanges[$inputHeader][] = [$remainingTopRangeStart, $remainingTopRangeEnd];
+                    }
+
+                    if ($inputEnd > $sourceEnd) { // Update the current input ranges.
+                        $remainingBottomRangeStart = $sourceEnd + 1;
+                        $remainingBottomRangeEnd = $inputEnd;
+                        $inputRanges[$inputHeader][] = [$remainingBottomRangeStart, $remainingBottomRangeEnd];
+                    }
+
+                    $inputRanges[$header][] = [$destinationRangeStart, $destinationRangeEnd]; // Register the transformed range for the next round.
+                    unset($inputRanges[$inputHeader][$index]); // Update the current input ranges.
+                }
+
+                if (isCompleteOuterOverlap($inputStart, $inputEnd, $sourceStart, $sourceEnd) === true) {
+                    $destinationRangeStart = $destinationStart + ($inputStart - $sourceStart);
+                    $destinationRangeEnd = $destinationEnd - ($sourceEnd - $inputEnd);
+
+                    $inputRanges[$header][] = [$destinationRangeStart, $destinationRangeEnd]; // Register the transformed range for the next round.
+                    unset($inputRanges[$inputHeader][$index]); // Update the current input ranges.
+                }
+
+            } // Done looping through the input ranges.
+        } // Done looping through the map ranges.
+
+
+        // Move any remaining input ranges to the next round.
+        foreach($inputRanges[$inputHeader] as $index => $inputRange) {
+            $inputRanges[$header][] = $inputRange;
+            unset($inputRanges[$inputHeader][$index]);
+        }
+
+        // Move on to the next map (header).
+        $inputHeader = $header;
+
+    } // Done looping through the maps.
+
+    $locationRanges = $inputRanges['humidity-to-location'];
+    usort($locationRanges, fn ($x, $y) => $x[0] <=> $y[0]);
+
+    return $locationRanges[0][0];
 }
 
 $start = microtime(true);
