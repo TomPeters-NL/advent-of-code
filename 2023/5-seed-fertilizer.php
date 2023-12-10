@@ -209,6 +209,10 @@ function partTwo(array $input): int
     return $locationRanges[0][0];
 }
 
+###############
+### Results ###
+###############
+
 $start = microtime(true);
 $solutionOne = partOne($input);
 $solutionTwo = partTwo($input);

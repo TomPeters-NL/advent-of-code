@@ -77,9 +77,13 @@ function partOneAndTwo(array $input, bool $jokers): int
     return $winnings;
 }
 
+###############
+### Results ###
+###############
+
 $start = microtime(true);
-$solutionOne = partOneAndTwo($input, false);
-$solutionTwo = partOneAndTwo($input, true);
+$solutionOne = partOne($input);
+$solutionTwo = partTwo($input);
 $end = microtime(true);
 
 echo '*-------------------------*' . PHP_EOL;

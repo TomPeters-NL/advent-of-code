@@ -60,6 +60,10 @@ function partTwo(array $input): int
     return $oasisOutput;
 }
 
+###############
+### Results ###
+###############
+
 $start = microtime(true);
 $solutionOne = partOne($input);
 $solutionTwo = partTwo($input);

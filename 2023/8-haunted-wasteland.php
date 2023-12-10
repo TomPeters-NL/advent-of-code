@@ -111,6 +111,10 @@ function partTwo(array $input): int
     return (int)$leastCommonMultiple;
 }
 
+###############
+### Results ###
+###############
+
 $start = microtime(true);
 $solutionOne = partOne($input);
 $solutionTwo = partTwo($input);
