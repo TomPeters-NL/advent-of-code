@@ -1,39 +1,81 @@
 <?php
 
-$input = file('./input/10-test.txt');
+$input = file('./input/10.txt');
+
+/**
+ * Reverses the grid's Y-axis, so positive changes in Y correspond to northbound movement.
+ *
+ * @param string[] $input
+ *
+ * @return string[]
+ */
+function getGrid(array $input): array
+{
+    $keys = array_keys($input);
+    $reversedKeys = array_reverse($keys);
+
+    return array_combine($reversedKeys, $input);
+}
 
 /**
  * @param string[] $grid
+ * @param array[]<int,string> $loop
+ *
+ * @return string[]
  */
-function identifyStart(array $grid, int $x, int $y): string
+function simplifyGrid(array $grid, array $loop, bool $visualizeGrid = false): array
 {
-    $possibleDirections = '';
+    foreach ($grid as $y => $row) {
+        $positions = str_split($row);
 
-    $north = ['x' => $x, 'y' => $y + 1];
-    $destination = $grid[$north['y']][$north['x']];
-    if (strpos('|7F', $destination) !== false) {
-        $possibleDirections .= 'N';
+        ksort($positions);
+        foreach ($positions as $x => $identity) {
+        $isPartOfLoop = array_key_exists($y, $loop) && array_key_exists($x, $loop[$y]);
+
+            if ($isPartOfLoop === false) {
+                $positions[$x] = '.';
+            }
+        }
+
+        $grid[$y] = implode('', $positions);
     }
 
-    $east = ['x' => $x + 1, 'y' => $y];
-    $destination = $grid[$east['y']][$east['x']];
-    if (strpos('-J7', $destination) !== false) {
-        $possibleDirections .= 'E';
+    if ($visualizeGrid === true) {
+        foreach ($grid as $row) {
+            var_dump($row);
+        }
     }
 
-    $south = ['x' => $x, 'y' => $y - 1];
-    $destination = $grid[$south['y']][$south['x']];
-    if (strpos('|LJ', $destination) !== false) {
-        $possibleDirections .= 'S';
+    return $grid;
+}
+
+/**
+ * Retrieves the loop's starting X and Y coordinates and replaces the "S" character with its actual character.
+ *
+ * @param string[] $grid
+ *
+ * @return array<int,string>
+ */
+function identifyStart(array &$grid): array
+{
+    // Determine the starting X and Y coordinates.
+    foreach ($grid as $y => $row) {
+        $x = strpos($row, 'S');
+
+        if ($x !== false) {
+            break;
+        }
     }
 
-    $west = ['x' => $x - 1, 'y' => $y];
-    $destination = $grid[$west['y']][$west['x']];
-    if (strpos('-LF', $destination) !== false) {
-        $possibleDirections .= 'W';
-    }
+    // Determine potential destinations.
+    $potentialDestinations = '';
+    $potentialDestinations .= strpos('|F7', $grid[$y + 1][$x]) !== false ? 'N' : '';
+    $potentialDestinations .= strpos('-J7', $grid[$y][$x + 1]) !== false ? 'E' : '';
+    $potentialDestinations .= strpos('|LJ', $grid[$y - 1][$x]) !== false ? 'S' : '';
+    $potentialDestinations .= strpos('-LF', $grid[$y][$x - 1]) !== false ? 'W' : '';
 
-    return match($possibleDirections) {
+    // Determine the true identity of S.
+    $identity = match($potentialDestinations) {
         'NE' => 'L',
         'NS' => '|',
         'NW' => 'J',
@@ -41,166 +83,137 @@ function identifyStart(array $grid, int $x, int $y): string
         'EW' => '-',
         'SW' => '7',
     };
+
+    // Replace the "S" character with its true identity.
+    $grid[$y][$x] = $identity;
+
+    return [$x, $y, $identity];
+}
+
+/**
+ * Identifies a potential valid move from or to the starting position.
+ *
+ * @param string[] $grid
+ * @param array<int,string> $start
+ *
+ * @return array<int,string>
+ */
+function identifyPotentialPosition(array $grid, array $start): array
+{
+    list($x, $y, $identity) = $start;
+
+    match ($identity) {
+        '|' => $y++,
+        '-' => $x++,
+        'L' => $y++,
+        'J' => $y++,
+        '7' => $y--,
+        'F' => $y--,
+    };
+
+    $identity = $grid[$y][$x];
+
+    return [$x, $y, $identity];
 }
 
 /**
  * @param string[] $grid
+ * @param array<int,string> $currentPosition
+ * @param array<int,string> $previousPosition
  *
- * @return int[]
+ * @return array<int,string>
  */
-function findStartingLocation(array $grid): array
+function identifyNextPosition(array $grid, array $currentPosition, array $previousPosition): array
 {
-    foreach ($grid as $y => $row) {
-        $x = strpos($row, 'S');
+    list($currentX, $currentY, $currentCharacter) = $currentPosition;
+    list($previousX, $previousY, $previousCharacter) = $previousPosition;
 
-        if ($x !== false) {
-            return ['x' => $x, 'y' => $y];
-        }
-    }
-}
+    // Determine the direction from whence the loop originated.
+    $horizontalChange = $previousX - $currentX;
+    $horizontalOrigin = $horizontalChange === 1 ? 'E' : ($horizontalChange === -1 ? 'W' : '');
 
-/**
- * @param string[] $grid
- *
- * @return int[]
- */
-function findFirstLocation(array $grid, int $x, int $y): array
-{
-    $north = ['x' => $x, 'y' => $y + 1];
-    $destination = $grid[$north['y']][$north['x']];
-    if (strpos('|7F', $destination) !== false) {
-        return $north;
-    }
+    $verticalChange = $previousY - $currentY;
+    $verticalOrigin = $verticalChange === 1 ? 'N' : ($verticalChange === -1 ? 'S' : '');
 
-    $east = ['x' => $x + 1, 'y' => $y];
-    $destination = $grid[$east['y']][$east['x']];
-    if (strpos('-J7', $destination) !== false) {
-        return $east;
-    }
+    $origin = $horizontalOrigin . $verticalOrigin;
 
-    $south = ['x' => $x, 'y' => $y - 1];
-    $destination = $grid[$south['y']][$south['x']];
-    if (strpos('|LJ', $destination) !== false) {
-        return $south;
-    }
-
-    $west = ['x' => $x - 1, 'y' => $y];
-    $destination = $grid[$west['y']][$west['x']];
-    if (strpos('-LF', $destination) !== false) {
-        return $west;
-    }
-}
-
-/**
- * @param string[] $grid
- * @param int[] $currentXY
- * @param int[] $previousXY
- *
- * @return int[]
- */
-function findNextLocation(array $grid, array $currentXY, array $previousXY): array
-{
-    $currentX = $currentXY['x'];
-    $currentY = $currentXY['y'];
-    $previousX = $previousXY['x'];
-    $previousY = $previousXY['y'];
-
-    $currentLocation = $grid[$currentY][$currentX];
-    $nextX = $currentX;
-    $nextY = $currentY;
-
-    switch ($currentLocation) {
+    // Determine the next X and Y coordinates.
+    switch ($currentCharacter) {
         case '|':
-            if ($previousY < $currentY) { // South -> North
-                $nextY++;
-            } else { // North -> South
-                $nextY--;
-            }
+            $x = $currentX;
+            $y = $origin === 'N' ? $currentY - 1 : $currentY + 1;
 
             break;
         case '-':
-            if ($previousX < $currentX) { // West -> East
-                $nextX++;
-            } else { // East -> West
-                $nextX--;
-            }
+            $x = $origin === 'E' ? $currentX - 1 : $currentX + 1;
+            $y = $currentY;
 
             break;
         case 'L':
-            if ($previousY > $currentY) { // North -> East
-                $nextX++;
-            } else { // East -> North
-                $nextY++;
-            }
+            $x = $origin === 'N' ? $currentX + 1 : $currentX;
+            $y = $origin === 'E' ? $currentY + 1 : $currentY;
 
             break;
         case 'J':
-            if ($previousY > $currentY) { // North -> West
-                $nextX--;
-            } else { // West -> North
-                $nextY++;
-            }
+            $x = $origin === 'N' ? $currentX - 1 : $currentX;
+            $y = $origin === 'W' ? $currentY + 1 : $currentY;
 
             break;
         case '7':
-            if ($previousY < $currentY) { // South -> West
-                $nextX--;
-            } else { // West -> South
-                $nextY--;
-            }
+            $x = $origin === 'S' ? $currentX - 1 : $currentX;
+            $y = $origin === 'W' ? $currentY - 1 : $currentY;
 
             break;
         case 'F':
-            if ($previousY < $currentY) { // South -> East
-                $nextX++;
-            } else { // East -> South
-                $nextY--;
-            }
+            $x = $origin === 'S' ? $currentX + 1 : $currentX;
+            $y = $origin === 'E' ? $currentY - 1 : $currentY;
 
             break;
-        case 'S':
-            throw new Exception('You are back at the start. You really shouldn\'t be here.');
         default:
-            throw new Exception('You took a wrong direction somewhere, partner.');
+            throw new Exception('Oh no, the loop! It\'s broken!');
     }
 
-    return ['x' => $nextX, 'y' => $nextY];
+    // Determine the next character's identity.
+    $identity = $grid[$y][$x];
+
+    return [$x, $y, $identity];
 }
 
 /**
- * @param string[] $grid
- * @param int[][] $loop
+ * Determines the amount of tiles inside of the loop, using the ray-casting algorithm.
+ *
+ * @param string[] $cleanGrid
  */
-function applyRayCastingAlgorithm(array $grid, array $loop, int $y): int
+function getInnerTiles(array $cleanGrid): int
 {
-    // Isolate target row.
-    $gridRow = $grid[$y];
-    $loopCharacters = $loop[$y];
-    $loopCoordinates = array_keys($loopCharacters);
+    $innerTiles = 0;
+    foreach ($cleanGrid as $y => $row) {
+        $skippable = strlen($row) === substr_count($row, '.');
+        if ($skippable === true) { // Skip if row consists solely of periods.
+            continue;
+        }
+        $cleanRow = preg_replace('/^\.+|-|\.+$/', '', $row); // Replace outside periods and horizontal characters.
 
-    // Remove edge tiles.
-    $firstLoopCoordinate = min($loopCoordinates);
-    $loopWidth = max($loopCoordinates) - $firstLoopCoordinate + 1;
-    $sample = array_slice(str_split($gridRow), $firstLoopCoordinate, $loopWidth, true);
+        $positions = str_split($cleanRow);
+        foreach ($positions as $x => $identity) {
+            if ($identity !== '.') { // Skip if the current character is part of the loop.
+                continue;
+            }
 
-    $insideTiles = 0;
-    foreach ($sample as $x => $character) {
-        if (in_array($x, $loopCoordinates) === false) {
-            $westLength = array_search($x, array_keys($sample));
-            $westLoop = array_slice($sample, 0, $westLength, true);
-            $pureWestLoop = array_reverse(array_intersect_key($loopCharacters, $westLoop), true);
-            preg_match_all('/(L7|FJ)|(LJ|F7)|(\||L|F|J|7)/', str_replace('-', '', implode('', $pureWestLoop)), $matches);
+            $fragment = substr($cleanRow, 0, $x);
+            preg_match_all('/(L7|FJ)|(LJ|F7)|(\||L|F|J|7)/', $fragment, $matches);
 
-            $walls = count(array_filter($matches[1]));     // Opposites: L7 F7
-            $walls += count(array_filter($matches[2])) * 2; // Similars : LJ FJ
-            $walls += count(array_filter($matches[3]));     // Singulars: | L F J 7
-            if ($walls % 2 !== 0) {
-                $insideTiles++;
+            $verticals = count(array_filter($matches[1])); // Verticals going in opposite directions (L <-> 7 & F <-> 7).
+            $verticals += count(array_filter($matches[2])) * 2; // Verticals going in the same directions (L <-> J & F <-> J).
+            $verticals += count(array_filter($matches[3])); // Singular verticals (L, F, J & 7).
+
+            if ($verticals % 2 !== 0) {
+                $innerTiles++;
             }
         }
     }
 
-    return $insideTiles;
+    return $innerTiles;
 }
 
 /**
@@ -208,26 +221,23 @@ function applyRayCastingAlgorithm(array $grid, array $loop, int $y): int
  */
 function partOne(array $input): int
 {
-    // Reverse grid keys to make Y axis more readable.
-    $reversedKeys = array_reverse(array_keys($input));
-    $grid = array_combine($reversedKeys, $input);
+    $grid = getGrid($input);
+    $start = identifyStart($grid);
 
-    $start = findStartingLocation($grid);
-    $firstLocation = findFirstLocation($grid, $start['x'], $start['y']);
+    $loopLength = 0;
+    $previousPosition = identifyPotentialPosition($grid, $start);
+    $currentPosition = $start;
 
-    $steps = 1;
-    $previousLocation = $start;
-    $currentLocation = $firstLocation;
+    do {
+        $nextPosition = identifyNextPosition($grid, $currentPosition, $previousPosition);
 
-    while ($currentLocation !== $start) {
-        $nextLocation = findNextLocation($grid, $currentLocation, $previousLocation);
+        $previousPosition = $currentPosition;
+        $currentPosition = $nextPosition;
 
-        $previousLocation = $currentLocation;
-        $currentLocation = $nextLocation;
-        $steps++;
-    }
+        $loopLength++;
+    } while ($start[0] !== $currentPosition[0] || $start[1] !== $currentPosition[1]);
 
-    return $steps / 2;
+    return $loopLength / 2;
 }
 
 /**
@@ -235,46 +245,26 @@ function partOne(array $input): int
  */
 function partTwo(array $input): int
 {
-    // Reverse grid keys to make Y axis more readable.
-    $reversedKeys = array_reverse(array_keys($input));
-    $grid = array_combine($reversedKeys, $input);
+    $grid = getGrid($input);
+    $start = identifyStart($grid);
 
-    $start = findStartingLocation($grid);
-    $firstLocation = findFirstLocation($grid, $start['x'], $start['y']);
+    $loop = [];
+    $previousPosition = identifyPotentialPosition($grid, $start);
+    $currentPosition = $start;
 
-    $previousLocation = $start;
-    $currentLocation = $firstLocation;
+    do {
+        list($x, $y, $identity) = $currentPosition;
+        $loop[$y][$x] = $identity;
 
-    $currentX = $currentLocation['x'];
-    $currentY = $currentLocation['y'];
-    $loop = [$currentY => [$currentX => $grid[$currentY][$currentX]]]; // Record first location.
-    while ($currentLocation !== $start) {
-        $nextLocation = findNextLocation($grid, $currentLocation, $previousLocation);
+        $nextPosition = identifyNextPosition($grid, $currentPosition, $previousPosition);
 
-        $previousLocation = $currentLocation;
-        $currentLocation = $nextLocation;
+        $previousPosition = $currentPosition;
+        $currentPosition = $nextPosition;
+    } while ($start[0] !== $currentPosition[0] || $start[1] !== $currentPosition[1]);
 
-        $currentX = $currentLocation['x'];
-        $currentY = $currentLocation['y'];
-        $loop[$currentY][$currentX] = $grid[$currentY][$currentX]; // Record current location.
-    }
+    $cleanGrid = simplifyGrid($grid, $loop, true);
 
-
-    $startX = $start['x'];
-    $startY = $start['y'];
-    $grid[$startY][$startX] = identifyStart($grid, $startX, $startY);
-    krsort($loop);
-
-
-    $insideTiles = 0;
-    foreach ($loop as $y => &$row) {
-        ksort($row);
-
-        $insideTiles += applyRayCastingAlgorithm($grid, $loop, $y);
-    }
-
-    return $insideTiles;
-    # 552 is too high.
+    return getInnerTiles($cleanGrid);
 }
 
 ###############
