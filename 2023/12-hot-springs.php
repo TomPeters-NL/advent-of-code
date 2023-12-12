@@ -2,12 +2,29 @@
 
 $input = file('./input/12-test.txt');
 
+function iterateRecord(int &$sum, string $record, array $groupSizes, array &$cache, int $index = 0): void
+{
+    $isDamagedRecord = strpos($record, '?') !== false;
+    $isInCache = array_key_exists($record . $index, $cache);
+}
+
 /**
  * @param string[] $input
  */
 function partOne(array $input): int
 {
-    return 1;
+    $arrangementSum = 0;
+    $cache = [];
+
+    foreach ($input as $springRecord) {
+        list($record, $groupSizes) = explode(' ', $springRecord);
+        $record = trim($record);
+        $groupSizes = array_map('intval', explode(',', trim($groupSizes)));
+
+        iterateRecord($arrangementSum, $record, $groupSizes, $cache);
+    }
+
+    return $arrangementSum;
 }
 
 /**
