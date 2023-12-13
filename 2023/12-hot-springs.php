@@ -50,47 +50,27 @@ function validateCompleteRecord(string $record, array $groupSizes): bool
  */
 function validatePartialRecord(string $record, array $groupSizes): bool
 {
+    // Extract the groups currently present in the partial record.
     preg_match_all('/#+/', $record, $matches);
-    $groups = $matches[0];
+    $currentGroups = $matches[0];
+    $groupCount = count($currentGroups);
 
-    $isValidGroupAmount = count($groups) <= count($groupSizes);
-    var_dump(count($groups) . ' vs ' . count($groupSizes));
+    // Check whether the current record does not exceed the number of required groups.
+    $validGroupCount = $groupCount <= count($groupSizes);
 
-    if ($isValidGroupAmount === true) {
-        $hasValidGroupSizes = false;
+    // Check whether the existing groups adhere to the required length.
+    $validGroupLength = $groupCount === 0;
+    if ($validGroupCount === true && $groupCount > 0) {
+        foreach ($currentGroups as $index => $group) {
+            $validGroupLength = strlen($group) <= $groupSizes[$index];
 
-        foreach ($groups as $group) {
-            $hasValidGroupSizes = strlen($group) <= max($groupSizes);
-
-            if ($hasValidGroupSizes === false) {
+            if ($validGroupLength === false) {
                 break;
             }
         }
     }
 
-    return $isValidGroupAmount && $hasValidGroupSizes;
-}
-
-/**
- * @param string[] $cache
- */
-function addToCache(array &$cache, string $record, int $index): void
-{
-    $record[$index] = 'x';
-
-    if (array_key_exists($record, $cache) === false) {
-        $cache[$record] = $record;
-    }
-}
-
-/**
- * @param string[] $cache
- */
-function validateCache(array &$cache, string $record, int $index): bool
-{
-    $record[$index] = 'x';
-
-    return array_key_exists($record, $cache);
+    return $validGroupCount && $validGroupLength;
 }
 
 /**
@@ -98,43 +78,36 @@ function validateCache(array &$cache, string $record, int $index): bool
  * @param int[] $groupSizes
  * @param string[] $cache
  */
-function iterateRecord(array &$arrangements, string $record, array $groupSizes, array &$cache, int $index = 0): void
+function iterateRecord(array &$arrangements, string $record, array $groupSizes, array &$cache): void
 {
-    $isInCache = validateCache($cache, $record, $index);
-    $isDamagedRecord = str_contains($record . $index, '?');
+    $isInCache = array_key_exists($record, $cache);
+    $isDamagedRecord = str_contains($record, '?');
 
     if ($isInCache === false && $isDamagedRecord === true) {
         // Cache the current arrangement.
-        addToCache($cache, $record, $index);
+        $cache[$record] = $record;
+
+        // Validate current progress.
+        $target = strpos($record, '?');
+        $progress = substr($record, 0, $target + 1);
+        $isValidRecord = validatePartialRecord($progress, $groupSizes);
 
         // Create new arrangements.
         $iteration1 = $iteration2 = $record;
-        $target = $record[$index];
 
-        if ($target === '?') {
-            $iteration1[$index] = '.';
-            $iteration2[$index] = '#';
-        }
-
-        // Check validity of new arrangements.
-//        $validIteration1 = validatePartialRecord($record, $groupSizes);
-//        $validIteration2 = validatePartialRecord($record, $groupSizes);
+        $iteration1[$target] = '.';
+        $iteration2[$target] = '#';
 
         // Continue iteration process.
-        $index++;
-
-//        if ($validIteration1 === true) {
-            iterateRecord($arrangements, $iteration1, $groupSizes, $cache, $index);
-//        }
-
-//        if ($validIteration2 === true) {
-            iterateRecord($arrangements, $iteration2, $groupSizes, $cache, $index);
-//        }
+        if ($isValidRecord === true) {
+            iterateRecord($arrangements, $iteration1, $groupSizes, $cache);
+            iterateRecord($arrangements, $iteration2, $groupSizes, $cache);
+        }
     }
 
     if ($isInCache === false && $isDamagedRecord === false) {
         // Cache the current arrangement.
-        addToCache($cache, $record, $index);
+        $cache[$record] = $record;
 
         // Check if the arrangement matches conditions.
         $isValidRecord = validateCompleteRecord($record, $groupSizes);
@@ -190,7 +163,6 @@ function partTwo(array $input): int
         $groupSizes = array_map('intval', explode(',', trim($groupSizes)));
 
         list($record, $groupSizes) = unfold($record, $groupSizes);
-
         $arrangementSum += calculateArrangementSum($record, $groupSizes);
     }
 
