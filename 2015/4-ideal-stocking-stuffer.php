@@ -1,6 +1,20 @@
 <?php
 
+######################
+### Initialization ###
+######################
+
+require_once(__DIR__ . '/../helper/AdventHelper.php');
+
+use AdventOfCode\Helper\AdventHelper;
+
+$adventHelper = new AdventHelper();
+
 $input = file('./input/4.txt');
+
+#################
+### Solutions ###
+#################
 
 /**
  * @param string[] $input
@@ -29,14 +43,4 @@ function findSecretNumber(array $input, string $targetPrefix): int
 ### Results ###
 ###############
 
-$start = microtime(true);
-$solutionOne = findSecretNumber($input, '00000');
-$solutionTwo = findSecretNumber($input, '000000');
-$end = microtime(true);
-
-echo '*-------------------------*' . PHP_EOL;
-echo 'Part 1: ' . $solutionOne . PHP_EOL;
-echo 'Part 2: ' . $solutionTwo . PHP_EOL;
-echo PHP_EOL;
-echo 'Completed in ' . number_format(($end - $start) * 1000, 2) . ' milliseconds!' . PHP_EOL;
-echo '*-------------------------*' . PHP_EOL;
+$adventHelper->printSolutions(partOne($input), partTwo($input));
