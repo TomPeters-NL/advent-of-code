@@ -1,6 +1,6 @@
 <?php
 
-$input = file('./input/13-test.txt');
+$input = file('./input/1.txt');
 
 /**
  * @param string[] $input
