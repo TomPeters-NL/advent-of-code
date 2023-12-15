@@ -62,10 +62,10 @@ function partTwo(array $input): int
         $boxNumber = $labelCache[$label] ?? $labelCache[$label] = runHashAlgorithm($label);
 
         switch ($operator) {
-            case '=':
+            case '=': # Either add or overwrite a lens in a box.
                 $boxes[$boxNumber][$label] = (int)$focalLength;
                 break;
-            case '-':
+            case '-': # If in the specified box, remove the lens from the sequence.
                 $existingBoxNumber = array_key_exists($boxNumber, $boxes);
                 $existingLensLabel = $existingBoxNumber === true && array_key_exists($label, $boxes[$boxNumber]);
 
