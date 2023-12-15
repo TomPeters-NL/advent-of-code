@@ -11,7 +11,7 @@ class AdventHelper
         $this->startTime = microtime(true);
     }
 
-    function printSolutions(string|int $alpha, string|int $beta): void
+    public function printSolutions(string|int $alpha, string|int $beta): void
     {
         $endTime = microtime(true);
         $duration = $endTime - $this->startTime;
@@ -23,7 +23,7 @@ class AdventHelper
 
         $lengthAlpha = strlen($solutionAlpha);
         $lengthBeta  = strlen($solutionBeta);
-        $length = $lengthAlpha >= $lengthBeta ? $lengthAlpha : $lengthBeta;
+        $length = max($lengthAlpha, $lengthBeta);
 
         $separator = '*' . str_repeat('-', $length) . '*' . PHP_EOL;
         $fillerTime = str_repeat(' ', $length - strlen($time) + 1);
