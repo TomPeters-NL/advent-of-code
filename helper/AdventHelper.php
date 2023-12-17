@@ -23,10 +23,11 @@ class AdventHelper
 
         $lengthAlpha = strlen($solutionAlpha);
         $lengthBeta  = strlen($solutionBeta);
-        $length = max($lengthAlpha, $lengthBeta);
+        $lengthTime = strlen($time);
+        $length = max($lengthAlpha, $lengthBeta, $lengthTime);
 
         $separator = '*' . str_repeat('-', $length) . '*' . PHP_EOL;
-        $fillerTime = str_repeat(' ', $length - strlen($time) + 1);
+        $fillerTime = str_repeat(' ', $length - $lengthTime + 1);
         $fillerAlpha = str_repeat(' ', $length - $lengthAlpha + 1);
         $fillerBeta = str_repeat(' ', $length - $lengthBeta + 1);
 
