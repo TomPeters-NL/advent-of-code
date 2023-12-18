@@ -10,7 +10,7 @@ use AdventOfCode\Helper\AdventHelper;
 
 $adventHelper = new AdventHelper();
 
-$input = file('./input/18-test.txt', FILE_IGNORE_NEW_LINES);
+$input = file('./input/18.txt', FILE_IGNORE_NEW_LINES);
 
 #################
 ### Solutions ###
@@ -20,103 +20,122 @@ $input = file('./input/18-test.txt', FILE_IGNORE_NEW_LINES);
  * Prepare the dig plan in a more useful format.
  *
  * @param string[] $input
+ *
  * @return array<int,string>
  */
-function prepareDigPlan(array $input): array
+function prepareDigPlan(array $input, bool $theElvesAreIdiots = false): array
 {
     $digPlan = [];
 
     foreach ($input as $instructions) {
         [$direction, $length, $color] = explode(' ', $instructions);
 
-        # Cast length to integer.
-        $integerLength = (int)$length;
+        if ($theElvesAreIdiots === false) {
+            $digPlan[] = [$direction, (int)$length];
+        } else {
+            # Remove unnecessary from the hexadecimal string.
+            $pureColor = preg_replace('/[#()]/', '', $color);
 
-        # Remove the brackets from the color code.
-        $pureColor = preg_replace('/[()]/', '', $color);
+            # Convert the hexadecimal digits to integer length.
+            $hexadecimal = substr($pureColor, 0, 5);
+            $length = (int)hexdec($hexadecimal);
 
-        $digPlan[] = [$direction, $integerLength, $pureColor];
+            # Convert the last hexadecimal digit to a direction.
+            $directionDigit = (int)substr($pureColor, 5, 1);
+            $direction = match ($directionDigit) {
+                0 => 'R',
+                1 => 'D',
+                2 => 'L',
+                3 => 'U',
+            };
+
+            $digPlan[] = [$direction, $length];
+        }
     }
 
     return $digPlan;
 }
 
 /**
- * Creates a small grid representing the start of the lagoon and the digger.
+ * Creates a map of the lagoon corners as dug per the dig plan instructions.
  *
- * @return string[][]
- */
-function placeDigger(): array
-{
-    # Create a 3x3 grid of edges.
-    $lagoonStart = array_fill(-1, 3, '###');
-
-    # "Place" the digger.
-    $lagoonStart[0][0] = '.';
-
-    return $lagoonStart;
-}
-
-/**
  * @param array<int,string> $digPlan
  *
- * @return string[][]
+ * @return array<array<string,bool>>
  */
-function digLagoon(array $digPlan): array
+function determineLagoonCorners(array $digPlan): array
 {
-    $lagoon = placeDigger();
+    $lagoonCorners = [];
 
     # Set starting location.
     $diggerLocation = [0, 0];
 
     # Diggy, diggy, hole.
-    /**
-     * @var string $direction
-     * @var int $length
-     * @var string $color
-     */
-    foreach ($digPlan as [$direction, $length, $color]) {
+    foreach ($digPlan as [$direction, $length]) {
         [$x, $y] = $diggerLocation;
 
-        # Increase length by one to properly process the starting/ending edge.
-        $inclusiveLength = $length + 1;
-
-        # Determine the coordinates to which the digger should dig.
         [$endX, $endY] = match ($direction) {
-            'U' => [$x, $y - $inclusiveLength],
-            'D' => [$x, $y + $inclusiveLength],
-            'L' => [$x - $inclusiveLength, $y],
-            'R' => [$x + $inclusiveLength, $y],
+            'U' => [$x, $y - $length],
+            'D' => [$x, $y + $length],
+            'L' => [$x - $length, $y],
+            'R' => [$x + $length, $y],
         };
 
-        # Define the values that have to be processed for the lagoon and its edges.
-        $stepsX = $endX - $x;
-        $rangeX = $stepsX === 0 ? range($x - 1, $x + 1) : range($x, $endX);
+        # Log the lagoon corner's coordinates and color.
+        $lagoonCorners[] = [$endX, $endY];
 
-        $stepsY = $endY - $y;
-        $rangeY = $stepsY === 0 ? range($y - 1, $y + 1) : range($y, $endY);
-
-        # Start the digger, praise the Omnissiah!
-        foreach ($rangeY as $digY) {
-            foreach ($rangeX as $digX) {
-                if (in_array($direction, ['U', 'D']) === true) { # Dig up or down.
-                    if ($digX === $x && $digY !== $endY) {
-                        $lagoon[$digY][$digX] = '.';
-                    } else {
-                        $lagoon[$digY][$digX] = $color;
-                    }
-                } elseif(in_array($direction, ['L', 'R']) === true) { # Dig left or right.
-                    if ($digY === $y && $digX !== $endX) {
-                        $lagoon[$digY][$digX] = '.';
-                    } else {
-                        $lagoon[$digY][$digX] = $color;
-                    }
-                }
-            }
-        }
+        # Update the digger's coordinates.
+        $diggerLocation = [$endX, $endY];
     }
 
-    return $lagoon;
+    return $lagoonCorners;
+}
+
+/**
+ * Calculates the lagoon volume using the Shoelace formula.
+ *
+ * @param array<int,string> $digPlan
+ *
+ * @return int
+ */
+function calculateLagoonVolume(array $digPlan): int
+{
+    # Retrieve the corner coordinates for the lagoon polygon.
+    $lagoonCorners = determineLagoonCorners($digPlan);
+
+    # As the Shoelace formula is circular, copy the first item to the end.
+    $firstCornerKey = array_key_first($lagoonCorners);
+    $lagoonCorners[] = $lagoonCorners[$firstCornerKey];
+
+    # Calculate the area inside the corners.
+    $shoelace = 0;
+    foreach ($lagoonCorners as $index => [$x, $y]) {
+        [$nextX, $nextY] = $lagoonCorners[$index + 1] ?? [0, 0, ''];
+
+        $shoelace += $x * $nextY - $y * $nextX;
+    }
+    $shoelace /= 2;
+
+    # The Shoelace formula calculates the area of the lagoon from the middle of its edges.
+    # Currently, it's missing:
+    #     1. Half of the non-corner perimeter squares.
+    #     2. A quarter of all inside corner blocks.
+    #     3. Three quarters of all outside corner blocks.
+    #
+    # This modifies the area formula to: area = shoelace + 0.5 * non-corners + 0.25 * inside-corners + 0.75 * outside-corners.
+    #
+    # Excluding the 4 outside corners of the polygons, each outside corner is matched by an inside corner.
+    # This means we can simplify the corner area (excluding the 4 "outer" corners) to 0.75 - 0.25 = 0.5 * corners.
+    # Furthermore, treating the 4 "outer" corners as non-corners leaves us with 4 * (0.75 - 0.5) = 4 * 0.25 = 1.
+    #
+    # This means we can simplify the extended Shoelace formula as follows:
+    #    1. area = shoelace + 0.5 * non-corners + 0.25 * inside-corners + 0.75 * outside-corners.
+    #    2. area = shoelace + 0.5 * non-corners + 0.5 * corners + 1.
+    #    3. area = shoelace + 0.5 * (non-corners + corners) + 1.
+    #    4. area = shoelace + 0.5 * perimeter + 1.
+    $perimeterArea = array_reduce($digPlan, fn($area, $plan) => $area + $plan[1]);
+
+    return $shoelace + 0.5 * $perimeterArea + 1;
 }
 
 /**
@@ -126,9 +145,7 @@ function partOne(array $input): int
 {
     $digPlan = prepareDigPlan($input);
 
-    $lagoon = digLagoon($digPlan);
-
-    return 1;
+    return calculateLagoonVolume($digPlan);
 }
 
 /**
@@ -136,7 +153,9 @@ function partOne(array $input): int
  */
 function partTwo(array $input): int
 {
-    return 2;
+    $digPlan = prepareDigPlan($input, true);
+
+    return calculateLagoonVolume($digPlan);
 }
 
 ###############
