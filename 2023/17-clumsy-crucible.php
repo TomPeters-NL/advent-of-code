@@ -16,29 +16,30 @@ $input = file('./input/17-test.txt', FILE_IGNORE_NEW_LINES);
 ### Solutions ###
 #################
 
-class Space {
-    public int $x;
-    public int $y;
-    public int $cost;
+class Space
+{
     public string $coordinates;
 
-    public function __construct(int $x, int $y, int $cost = 0)
-    {
-        $this->x = $x;
-        $this->y = $y;
-        $this->cost = $cost;
+    public function __construct(
+        public int $x,
+        public int $y,
+        public int $dX,
+        public int $dY,
+        public int $distance,
+        public int $cost = 0
+    ) {
         $this->coordinates = $x . ',' . $y;
     }
 }
 
 /**
- * Prepares the input map for heuristic pathfinding fun.
+ * Prepares the input map for pathfinding.
  *
- * @param string[] $input
+ * @param string[] $input The puzzle input.
  *
- * @return int[][]
+ * @return int[][] The heat loss map split into X and Y axes.
  */
-function prepareMap(array $input): array
+function prepareHeatMap(array $input): array
 {
     $heatLossMap = [];
 
@@ -52,77 +53,73 @@ function prepareMap(array $input): array
     return $heatLossMap;
 }
 
-/**
- * Calculates a heuristic score to indicate a location's proximity to the goal.
- */
-function targetProximity(Space $location, Space $target): int
+function determineMinimalHeatLoss(array $heatMap, array $lavaPool, array $machinePartsFactory): array
 {
-    return abs($location->x - $target->x) + abs($location->y - $target->y);
-}
+    # Extract the city dimensions.
+    $minX = array_key_first($heatMap[0]);
+    $maxX = array_key_last($heatMap[0]);
+    $minY = array_key_first($heatMap);
+    $maxY = array_key_last($heatMap);
 
-/**
- * Find all neighboring spaces for a given space.
- *
- * @return Space[]
- */
-function findNeighbours(array $heatLossMap, Space $space): array
-{
-    $potentialNeighbours = [
-        [$space->x - 1, $space->y],
-        [$space->x + 1, $space->y],
-        [$space->x, $space->y - 1],
-        [$space->x, $space->y + 1],
-    ];
+    # Process the start location.
+    [$startX, $startY] = $lavaPool;
 
-    $neighbours = [];
-    foreach ($potentialNeighbours as [$x, $y]) {
-        $neighbourExists = isset($heatLossMap[$y][$x]);
+    # The list/queue that tracks which blocks to visit by prioritizing lower heat loss.
+    $queue = [];
+    $queue[] = ['heatLoss' => 0, 'x' => $startX, 'y' => $startY];
 
-        if ($neighbourExists === true) {
-            $neighbours[] = new Space($x, $y, $heatLossMap[$y][$x]);
-        }
-    }
+    # The list that tracks the tentative heat loss to each visited block.
+    $blocks = [];
+    $blocks["$startX,$startY"] = 0;
 
-    return $neighbours;
-}
+    # The list tracking the paths between blocks.
+    $paths = [];
+    $paths["$startX,$startY"] = null;
 
-function findOptimalPath(array $heatLossMap, Space $start, Space $target): array
-{
-    #Reference: https://www.redblobgames.com/pathfinding/a-star/introduction.html
+    while(empty($queue) === false) {
+        # Prioritize the queue.
+        uasort($queue, fn ($alpha, $beta) => $alpha['heatLoss'] <=> $beta['heatLoss']);
 
-    # Initialize the frontier and add the start location.
-    /** @var Space[] $frontier */
-    $frontier = [$start->coordinates];
+        # Retrieve the current block details.
+        ['heatLoss' => $heatLoss, 'x' => $x, 'y' => $y] = array_shift($queue);
 
-    # Initialize the path and cost trackers.
-    $path = [$start->coordinates => null];
-    $cost = [$start->coordinates => 0];
-
-    while (empty($frontier) === false) {
-        # Retrieve the current location from the front of the frontier queue.
-        $current = $frontier[array_key_first($frontier)];
-
-        # Check whether the goal has been reached.
-        if ($current->coordinates === $target->coordinates) {
+        # Stop pathfinding upon reaching the destination.
+        if ([$x, $y] === $machinePartsFactory) {
             break;
         }
 
-        $neighbours = findNeighbours($heatLossMap, $current);
+        # Find the neighbouring blocks.
+        $neighbours = [
+            [$x + 1, $y],
+            [$x - 1, $y],
+            [$x, $y + 1],
+            [$x, $y - 1],
+        ];
+
+        foreach ($neighbours as [$newX, $newY]) {
+            # Validate the new block coordinates.
+            if ($newX < $minX || $newX > $maxX || $newY < $minY || $newY > $maxY || in_array("$newX,$newY", array_keys($paths)) === true) {
+                continue;
+            }
+
+            # Calculate the heat loss in the neighbouring block.
+            $newHeatLoss = $blocks["$x,$y"] + $heatMap[$newY][$newX];
+
+            # Determine whether the neighbouring block should be considered.
+            if (isset($block["$newX,$newY"]) === false || $newHeatLoss < $blocks["$newX,$newY"]) {
+                # Update the heat loss for the block.
+                $blocks["$newX,$newY"] = $newHeatLoss;
+
+                # Update the queue.
+                $queue[] = ['heatLoss' => $newHeatLoss, 'x' => $newX, 'y' => $newY];
+
+                # Update the path so far.
+                $paths["$newX,$newY"] = "$x,$y";
+            }
+        }
     }
 
-    /*
-    for next in graph.neighbors(current):
-        new_cost = cost_so_far[current] + graph.cost(current, next)
-        if next not in cost_so_far or new_cost < cost_so_far[next]:
-            cost_so_far[next] = new_cost
-            priority = new_cost + heuristic(next, goal)
-            frontier.put(next, priority)
-            came_from[next] = current
-
-    return came_from, cost_so_far
-    */
-
-    return [];
+    return [$blocks, $paths];
 }
 
 /**
@@ -130,18 +127,14 @@ function findOptimalPath(array $heatLossMap, Space $start, Space $target): array
  */
 function partOne(array $input): int
 {
-    $map = prepareMap($input);
+    # Process the heat (loss) map.
+    $heatMap = prepareHeatMap($input);
 
-    $start = new Space(0, 0);
+    # The starting and ending city blocks: [x, y].
+    $lavaPool = [0, 0];
+    $machinePartFactory = [array_key_last($heatMap[0]), array_key_last($heatMap)];
 
-    $targetX = array_key_last($map[0]);
-    $targetY = array_key_last($map);
-    $targetCost = $map[$targetY][$targetX];
-    $target = new Space($targetX, $targetY, $targetCost);
-
-    $optimalPath = findOptimalPath($map, $start, $target);
-
-    return 1;
+    return determineMinimalHeatLoss($heatMap, $lavaPool, $machinePartFactory);
 }
 
 /**
