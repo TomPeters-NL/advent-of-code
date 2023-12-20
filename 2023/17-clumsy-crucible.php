@@ -39,7 +39,7 @@ class Space
  *
  * @return int[][] The heat loss map split into X and Y axes.
  */
-function prepareHeatMap(array $input): array
+function prepareMap(array $input): array
 {
     $heatLossMap = [];
 
@@ -53,74 +53,20 @@ function prepareHeatMap(array $input): array
     return $heatLossMap;
 }
 
-function determineMinimalHeatLoss(array $heatMap, array $lavaPool, array $machinePartsFactory): array
+/**
+ * Finds the most optimal path to the machine parts factory.
+ *
+ * @param int[][] $map                 The heat loss map of the city.
+ * @param int[]   $lavaPool            The coordinates of the starting point.
+ * @param int[]   $machinePartsFactory The coordinates of the endpoint.
+ *
+ * @return int[] A list of cumulative heat loss per block.
+ */
+function findPath(array $map, array $lavaPool, array $machinePartsFactory): array
 {
-    # Extract the city dimensions.
-    $minX = array_key_first($heatMap[0]);
-    $maxX = array_key_last($heatMap[0]);
-    $minY = array_key_first($heatMap);
-    $maxY = array_key_last($heatMap);
-
-    # Process the start location.
-    [$startX, $startY] = $lavaPool;
-
-    # The list/queue that tracks which blocks to visit by prioritizing lower heat loss.
-    $queue = [];
-    $queue[] = ['heatLoss' => 0, 'x' => $startX, 'y' => $startY];
-
-    # The list that tracks the tentative heat loss to each visited block.
-    $blocks = [];
-    $blocks["$startX,$startY"] = 0;
-
-    # The list tracking the paths between blocks.
-    $paths = [];
-    $paths["$startX,$startY"] = null;
-
-    while(empty($queue) === false) {
-        # Prioritize the queue.
-        uasort($queue, fn ($alpha, $beta) => $alpha['heatLoss'] <=> $beta['heatLoss']);
-
-        # Retrieve the current block details.
-        ['heatLoss' => $heatLoss, 'x' => $x, 'y' => $y] = array_shift($queue);
-
-        # Stop pathfinding upon reaching the destination.
-        if ([$x, $y] === $machinePartsFactory) {
-            break;
-        }
-
-        # Find the neighbouring blocks.
-        $neighbours = [
-            [$x + 1, $y],
-            [$x - 1, $y],
-            [$x, $y + 1],
-            [$x, $y - 1],
-        ];
-
-        foreach ($neighbours as [$newX, $newY]) {
-            # Validate the new block coordinates.
-            if ($newX < $minX || $newX > $maxX || $newY < $minY || $newY > $maxY || in_array("$newX,$newY", array_keys($paths)) === true) {
-                continue;
-            }
-
-            # Calculate the heat loss in the neighbouring block.
-            $newHeatLoss = $blocks["$x,$y"] + $heatMap[$newY][$newX];
-
-            # Determine whether the neighbouring block should be considered.
-            if (isset($block["$newX,$newY"]) === false || $newHeatLoss < $blocks["$newX,$newY"]) {
-                # Update the heat loss for the block.
-                $blocks["$newX,$newY"] = $newHeatLoss;
-
-                # Update the queue.
-                $queue[] = ['heatLoss' => $newHeatLoss, 'x' => $newX, 'y' => $newY];
-
-                # Update the path so far.
-                $paths["$newX,$newY"] = "$x,$y";
-            }
-        }
-    }
-
-    return [$blocks, $paths];
+    return [];
 }
+
 
 /**
  * @param string[] $input
@@ -128,13 +74,13 @@ function determineMinimalHeatLoss(array $heatMap, array $lavaPool, array $machin
 function partOne(array $input): int
 {
     # Process the heat (loss) map.
-    $heatMap = prepareHeatMap($input);
+    $map = prepareMap($input);
 
     # The starting and ending city blocks: [x, y].
     $lavaPool = [0, 0];
-    $machinePartFactory = [array_key_last($heatMap[0]), array_key_last($heatMap)];
+    $machinePartFactory = [array_key_last($map), array_key_last($map[0])];
 
-    return determineMinimalHeatLoss($heatMap, $lavaPool, $machinePartFactory);
+    return 1;
 }
 
 /**
