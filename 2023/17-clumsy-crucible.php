@@ -10,7 +10,7 @@ use AdventOfCode\Helper\AdventHelper;
 
 $adventHelper = new AdventHelper();
 
-$input = file('./input/17-test.txt', FILE_IGNORE_NEW_LINES);
+$input = file('./input/17.txt', FILE_IGNORE_NEW_LINES);
 
 #################
 ### Solutions ###
@@ -40,7 +40,8 @@ class Crucible
         public int $dY,              # The change in Y coordinate required to get here: -1, 0, 1.
         public int $distance = 1,   # The amount of moves in a straight line.
         public int $CHL = 0         # Cumulative heat loss.
-    ) {
+    )
+    {
     }
 
     public function getCityBlock(): CityBlock
@@ -105,7 +106,7 @@ function findPath(array $map, array $lavaPool, array $machinePartsFactory): arra
 
     while (empty($queue) === false) {
         # Sort the queue by (ascending) CHL.
-        uasort($queue, fn ($a, $b) => $a->CHL <=> $b->CHL);
+        uasort($queue, fn($a, $b) => $a->CHL <=> $b->CHL);
 
         # Retrieve the current location.
         $crucible = array_shift($queue);
@@ -128,31 +129,66 @@ function findPath(array $map, array $lavaPool, array $machinePartsFactory): arra
         }
 
         # List the potential directions towards other city blocks.
-        $potentialDirections = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+        $potentialDirections = [
+            [-1, 0],
+            [-2, 0],
+            [-3, 0],
+            [1, 0],
+            [2, 0],
+            [3, 0],
+            [0, -1],
+            [0, -2],
+            [0, -3],
+            [0, 1],
+            [0, 2],
+            [0, 3],
+        ];
 
         # Generate potential neighbouring city blocks.
         foreach ($potentialDirections as [$ndX, $ndY]) {
             # Set the new X and Y coordinates.
             [$newX, $newY] = [$currentCityBlock->x + $ndX, $currentCityBlock->y + $ndY];
 
-            # Validate whether the neighbouring city block is on the map.
-            if ($newX < $minX || $newX > $maxX || $newY < $minY || $newY > $maxY) {
+            # Determine whether the crucible is moving backwards.
+            $basicDX = $ndX <=> 0;
+            $basicDY = $ndY <=> 0;
+            $isMovingBackwards = $crucible->dX + $ndX === 0 || $crucible->dY + $ndY === 0;
+
+            # Validate whether the neighbouring city block is on the map, and the crucible is not moving backwards.
+            if ($newX < $minX || $newX > $maxX || $newY < $minY || $newY > $maxY || $isMovingBackwards === true) {
                 continue;
             }
 
             # Create the new city block.
             $newCityBlock = new CityBlock($newX, $newY, $ndX, $ndY);
 
-            # Calculate the new cumulative heat loss.
-            $newCHL = $crucible->CHL + $map[$newX][$newY];
+            # Calculate the new cumulative heat loss and distance traveled in a straight line.
+            $newCHL = $crucible->CHL;
 
-            # Validate whether the neighbouring city block has not been visited and the new CHL is irrelevant.
+            $movingForward = $crucible->dX === $ndX || $crucible->dY === $ndY;
+            $newDistance = $movingForward === true ? $crucible->distance : 0;
+
+            $rangeX = range($crucible->x + $basicDX, $newX);
+            $rangeY = range($crucible->y + $basicDY, $newY);
+
+            foreach ($rangeX as $x) {
+                foreach ($rangeY as $y) {
+                    $newCHL += $map[$x][$y];
+                    $newDistance++;
+                }
+            }
+
+            # Validate whether the neighbouring city block is yet to be visited.
             if (in_array($newCityBlock, $visited) === true) {
                 continue;
             }
 
+            if ($newDistance > 3) {
+                continue;
+            }
+
             # Add the neighbouring city block to the queue.
-            $queue[] = new Crucible($newX, $newY, $ndX, $ndY, 1, $newCHL);
+            $queue[] = new Crucible($newX, $newY, $basicDX, $basicDY, $newDistance, $newCHL);
         }
     }
 
@@ -174,7 +210,7 @@ function partOne(array $input): int
     # A list of optimal heat loss per block.
     $optimalHeatLoss = findPath($map, $lavaPool, $machinePartFactory);
 
-    return 1;
+    return $optimalHeatLoss["$machinePartFactory[0],$machinePartFactory[1]"];
 }
 
 /**
