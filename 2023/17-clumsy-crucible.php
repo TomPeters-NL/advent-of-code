@@ -82,8 +82,8 @@ function findPath(array $map, array $lavaPool, array $machinePartsFactory, int $
 
     # Configure the starting location: [cumulative heat loss, [x, y, direction, step count]].
     [$startX, $startY] = $lavaPool;
-    $queue->insert([0, [$startX, $startY, 'E', 1]]);
-    $queue->insert([0, [$startX, $startY, 'S', 1]]);
+    $queue->insert([0, [$startX, $startY, 'E', 0]]);
+    $queue->insert([0, [$startX, $startY, 'S', 0]]);
 
     # Configure the potential turns per block.
     $directions = [
@@ -98,7 +98,7 @@ function findPath(array $map, array $lavaPool, array $machinePartsFactory, int $
         [$CHL, [$x, $y, $direction, $steps]] = $queue->extract();
 
         # Check if the destination has been reached.
-        if ([$x, $y] === $machinePartsFactory) {
+        if ([$x, $y] === $machinePartsFactory && $steps >= $minimumSteps) {
             return $CHL;
         }
 
