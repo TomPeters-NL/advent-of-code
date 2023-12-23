@@ -10,45 +10,11 @@ use AdventOfCode\Helper\AdventHelper;
 
 $adventHelper = new AdventHelper();
 
-$input = file('./input/17.txt', FILE_IGNORE_NEW_LINES);
+$input = file('./input/17-test.txt', FILE_IGNORE_NEW_LINES);
 
 #################
 ### Solutions ###
 #################
-
-class CityBlock
-{
-    public string $coordinates;
-
-    public function __construct(
-        public int $x,              # The X coordinate on the city map.
-        public int $y,              # The Y coordinate on the city map.
-        public int $dX,             # The change in X coordinate required to get here: -1, 0, 1.
-        public int $dY              # The change in Y coordinate required to get here: -1, 0, 1.
-    )
-    {
-        $this->coordinates = $x . ',' . $y;
-    }
-}
-
-class Crucible
-{
-    public function __construct(
-        public int $x,              # The X coordinate on the city map.
-        public int $y,              # The Y coordinate on the city map.
-        public int $dX,             # The change in X coordinate required to get here: -1, 0, 1.
-        public int $dY,              # The change in Y coordinate required to get here: -1, 0, 1.
-        public int $distance = 1,   # The amount of moves in a straight line.
-        public int $CHL = 0         # Cumulative heat loss.
-    )
-    {
-    }
-
-    public function getCityBlock(): CityBlock
-    {
-        return new CityBlock($this->x, $this->y, $this->dX, $this->dY);
-    }
-}
 
 /**
  * Prepares the input map for pathfinding.
@@ -77,10 +43,12 @@ function prepareMap(array $input): array
  * @param int[][] $map                 The heat loss map of the city.
  * @param int[]   $lavaPool            The coordinates of the starting point.
  * @param int[]   $machinePartsFactory The coordinates of the endpoint.
+ * @param int     $minimumDistance     The minimum amount of steps before turning is allowed.
+ * @param int     $maximumDistance     The maximum amount of steps without turning are allowed.
  *
- * @return int[] A list of cumulative heat loss per block.
+ * @return int The optimal cumulative heat loss for reaching the destination.
  */
-function findPath(array $map, array $lavaPool, array $machinePartsFactory): array
+function findPath(array $map, array $lavaPool, array $machinePartsFactory, int $minimumDistance, int $maximumDistance): int
 {
     # Determine the city map limits.
     $minX = array_key_first($map);
@@ -89,110 +57,67 @@ function findPath(array $map, array $lavaPool, array $machinePartsFactory): arra
     $maxY = array_key_last($map[0]);
 
     # Track which city blocks to explore.
-    /** @var Crucible[] $queue */
-    $queue = [];
+    $queue = new SplMinHeap();
 
-    # Configure the starting location.
+    # Configure the starting location: [heuristic priority, [cumulative heat loss, x, y, previous x, previous y, delta X, delta Y, distance]].
     [$startX, $startY] = $lavaPool;
-    $queue[] = new Crucible($startX, $startY, 1, 0, 1, 0);
-    $queue[] = new Crucible($startX, $startY, 0, 1, 1, 0);
-
-    # Track the optimal heat loss per city block.
-    $heatLoss = [];
+    $queue->insert([0, [0, $startX, $startY, 0, 0, 1, 0, 1]]);
+    $queue->insert([0, [0, $startX, $startY, 0, 0, 0, 1, 1]]);
 
     # Track which city blocks have been visited.
-    /** @var CityBlock[] $visited */
     $visited = [];
 
-    while (empty($queue) === false) {
-        # Sort the queue by (ascending) CHL.
-        uasort($queue, fn($a, $b) => $a->CHL <=> $b->CHL);
-
+    while ($queue->isEmpty() === false) {
         # Retrieve the current location.
-        $crucible = array_shift($queue);
+        [$heuristicPriority, [$CHL, $currentX, $currentY, $previousX, $previousY, $dX, $dY, $distance]] = $queue->extract();
+
+        # Check if the goal location has been reached.
+        if ([$currentX, $currentY] === $machinePartsFactory && $distance > $minimumDistance) {
+            return $CHL;
+        }
 
         # Check if the location has been visited before.
-        $currentCityBlock = $crucible->getCityBlock();
-        if (in_array($currentCityBlock, $visited) === true) {
+        $blockSignature = "$currentX-$currentY-$dX-$dY-$distance";
+        if (in_array($blockSignature, $visited) === true) {
             continue;
         } else {
             # If not, add it to the visited list now.
-            $visited[] = $currentCityBlock;
-        }
-
-        # Log the cumulative heat loss for the current city block.
-        $heatLoss[$currentCityBlock->coordinates] = $crucible->CHL;
-
-        # Check if the goal location has been reached.
-        if ([$currentCityBlock->x, $currentCityBlock->y] === $machinePartsFactory) {
-            break;
+            $visited[] = $blockSignature;
         }
 
         # List the potential directions towards other city blocks.
-        $potentialDirections = [
-            [-1, 0],
-            [-2, 0],
-            [-3, 0],
-            [1, 0],
-            [2, 0],
-            [3, 0],
-            [0, -1],
-            [0, -2],
-            [0, -3],
-            [0, 1],
-            [0, 2],
-            [0, 3],
-        ];
+        $potentialDirections = [[-1, 0], [1, 0], [0, -1], [0, 1]];
 
         # Generate potential neighbouring city blocks.
         foreach ($potentialDirections as [$ndX, $ndY]) {
             # Set the new X and Y coordinates.
-            [$newX, $newY] = [$currentCityBlock->x + $ndX, $currentCityBlock->y + $ndY];
-
-            # Determine whether the crucible is moving backwards.
-            $basicDX = $ndX <=> 0;
-            $basicDY = $ndY <=> 0;
-            $isMovingBackwards = $crucible->dX + $ndX === 0 || $crucible->dY + $ndY === 0;
+            [$newX, $newY] = [$currentX + $ndX, $currentY + $ndY];
 
             # Validate whether the neighbouring city block is on the map, and the crucible is not moving backwards.
-            if ($newX < $minX || $newX > $maxX || $newY < $minY || $newY > $maxY || $isMovingBackwards === true) {
+            $isInBounds = $newX >= $minX && $newX <= $maxX && $newY >= $minY && $newY <= $maxY;
+            $isPreviousBlock = $newX === $previousX && $newY === $previousY;
+            if ($isInBounds === false || $isPreviousBlock === true) {
                 continue;
             }
 
-            # Create the new city block.
-            $newCityBlock = new CityBlock($newX, $newY, $ndX, $ndY);
+            # Calculate the new cumulative heat loss.
+            $newCHL = $CHL + $map[$newX][$newY];
+            $heuristicPriority = $newCHL + abs($newX - $machinePartsFactory[0]) + abs($newY - $machinePartsFactory[1]);
 
-            # Calculate the new cumulative heat loss and distance traveled in a straight line.
-            $newCHL = $crucible->CHL;
+            # Determine whether the crucible is moving straight and its new distance traveled.
+            $movingForward = $dX === $ndX || $dY === $ndY;
 
-            $movingForward = $crucible->dX === $ndX || $crucible->dY === $ndY;
-            $newDistance = $movingForward === true ? $crucible->distance : 0;
-
-            $rangeX = range($crucible->x + $basicDX, $newX);
-            $rangeY = range($crucible->y + $basicDY, $newY);
-
-            foreach ($rangeX as $x) {
-                foreach ($rangeY as $y) {
-                    $newCHL += $map[$x][$y];
-                    $newDistance++;
+            if ($movingForward === true) {
+                if ($distance < $maximumDistance) {
+                    $queue->insert([$heuristicPriority, [$newCHL, $newX, $newY, $currentX, $currentY, $ndX, $ndY, $distance + 1]]);
                 }
+            } elseif ($distance >= $minimumDistance || [$currentX, $currentY] === [0, 0]) {
+                $queue->insert([$heuristicPriority, [$newCHL, $newX, $newY, $currentX, $currentY, $ndX, $ndY, 1]]);
             }
-
-            # Validate whether the neighbouring city block is yet to be visited.
-            if (in_array($newCityBlock, $visited) === true) {
-                continue;
-            }
-
-            if ($newDistance > 3) {
-                continue;
-            }
-
-            # Add the neighbouring city block to the queue.
-            $queue[] = new Crucible($newX, $newY, $basicDX, $basicDY, $newDistance, $newCHL);
         }
     }
 
-    return $heatLoss;
+    return -1;
 }
 
 /**
@@ -207,10 +132,7 @@ function partOne(array $input): int
     $lavaPool = [0, 0];
     $machinePartFactory = [array_key_last($map), array_key_last($map[0])];
 
-    # A list of optimal heat loss per block.
-    $optimalHeatLoss = findPath($map, $lavaPool, $machinePartFactory);
-
-    return $optimalHeatLoss["$machinePartFactory[0],$machinePartFactory[1]"];
+    return findPath($map, $lavaPool, $machinePartFactory, 0, 3);
 }
 
 /**
@@ -218,7 +140,14 @@ function partOne(array $input): int
  */
 function partTwo(array $input): int
 {
-    return 2;
+    # Process the heat (loss) map.
+    $map = prepareMap($input);
+
+    # The starting and ending city blocks: [x, y].
+    $lavaPool = [0, 0];
+    $machinePartFactory = [array_key_last($map), array_key_last($map[0])];
+
+    return findPath($map, $lavaPool, $machinePartFactory, 4, 10);
 }
 
 ###############
