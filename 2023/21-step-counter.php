@@ -10,7 +10,7 @@ use AdventOfCode\Helper\AdventHelper;
 
 $adventHelper = new AdventHelper();
 
-$input = file('./input/1.txt');
+$input = file('./input/21-test.txt', FILE_IGNORE_NEW_LINES);
 
 #################
 ### Solutions ###
@@ -23,12 +23,7 @@ $input = file('./input/1.txt');
  */
 function partOne(array $input): int
 {
-    $instructions = $input[0];
-
-    $up = substr_count($instructions, '(');
-    $down = substr_count($instructions, ')');
-
-    return $up - $down;
+    return 1;
 }
 
 /**
@@ -38,17 +33,7 @@ function partOne(array $input): int
  */
 function partTwo(array $input): int
 {
-    $instructions = str_split($input[0]);
-
-    $floor = 0;
-    $position = 0;
-
-    do {
-        $instructions[$position] === '(' ? $floor++ : $floor--;
-        $position++;
-    } while ($floor >= 0);
-
-    return $position;
+    return 2;
 }
 
 ###############

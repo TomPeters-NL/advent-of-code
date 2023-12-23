@@ -17,7 +17,9 @@ $input = file('./input/4.txt');
 #################
 
 /**
- * @param string[] $input
+ * Returns the solution for the first part of this day's puzzle.
+ *
+ * @param string[] $input The puzzle input.
  */
 function partOne(array $input): int
 {
@@ -37,7 +39,9 @@ function partOne(array $input): int
 }
 
 /**
- * @param string[] $input
+ * Returns the solution for the second part of this day's puzzle.
+ *
+ * @param string[] $input The puzzle input.
  */
 function partTwo(array $input): int
 {
