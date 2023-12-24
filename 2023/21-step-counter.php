@@ -167,9 +167,9 @@ function partTwo(array $input): int
     $mapWidth = count($map[0]);
     $distanceToMapEdge = array_key_last($map[0]) - $startPosition['x'];
 
-    $u0 = calculatePositions($map, $startPosition, ($distanceToMapEdge + 1 * $mapWidth));
-    $u1 = calculatePositions($map, $startPosition, ($distanceToMapEdge + 2 * $mapWidth));
-    $u2 = calculatePositions($map, $startPosition, ($distanceToMapEdge + 3 * $mapWidth));
+    $u0 = calculatePositions($map, $startPosition, $distanceToMapEdge);
+    $u1 = calculatePositions($map, $startPosition, ($distanceToMapEdge + $mapWidth));
+    $u2 = calculatePositions($map, $startPosition, ($distanceToMapEdge + 2 * $mapWidth));
 
     $a = ($u2 - (2 * $u1) + $u0) / 2;
     $b = $u1 - $u0 - $a;
