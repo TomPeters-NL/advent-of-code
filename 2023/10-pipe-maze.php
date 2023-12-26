@@ -10,7 +10,7 @@ use AdventOfCode\Helper\AdventHelper;
 
 $adventHelper = new AdventHelper();
 
-$input = file('./input/10.txt');
+$input = file('./input/10');
 
 #################
 ### Solutions ###

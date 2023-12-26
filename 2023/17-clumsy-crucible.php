@@ -10,7 +10,7 @@ use AdventOfCode\Helper\AdventHelper;
 
 $adventHelper = new AdventHelper();
 
-$input = file('./input/17.txt', FILE_IGNORE_NEW_LINES);
+$input = file('./input/17', FILE_IGNORE_NEW_LINES);
 
 #################
 ### Solutions ###
