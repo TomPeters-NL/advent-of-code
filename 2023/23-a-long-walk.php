@@ -10,7 +10,7 @@ use AdventOfCode\Helper\AdventHelper;
 
 $adventHelper = new AdventHelper();
 
-$input = file('./input/23-test', FILE_IGNORE_NEW_LINES);
+$input = file('./input/23', FILE_IGNORE_NEW_LINES);
 
 #################
 ### Solutions ###
@@ -196,6 +196,77 @@ function mapIntersections(array $map, array $start, array $end): array
 }
 
 /**
+ * @param int[][] $intersections A list of path lengths between pairs of intersections.
+ * @param int[]   $start         The X and Y coordinates of the starting position.
+ * @param int[]   $end           The X and Y coordinates of the ending position.
+ *
+ * @return int[] A list of paths and their lengths.
+ */
+function generatePathsFromIntersections(array $intersections, array $start, array $end): array
+{
+    # Create the keys used to recognize the start and end points of the path.
+    $startKey = "$start[0],$start[1]";
+    $endKey = "$end[0],$end[1]";
+
+    # Initiate the paths list and initialize it with the first intersections.
+    $paths = [];
+    foreach ($intersections[$startKey] as $intersection => $pathLength) {
+        $newPath = $startKey . '->' . $intersection;
+        $paths[$newPath] = $pathLength;
+    }
+
+    $pathfinding = true;
+    while ($pathfinding === true) {
+        $newPaths = [];
+
+        foreach ($paths as $path => $totalPathLength) {
+            # Retrieve the intersections visited so far.
+            $progress = explode('->', $path);
+            $latestIntersection = $progress[array_key_last($progress)];
+
+            # Extract a list of reachable intersections from the current position.
+            $nextIntersections = $intersections[$latestIntersection] ?? [];
+
+            # Only proceed with pathfinding if there are reachable intersections left and the end hasn't been reached.
+            if (empty($nextIntersections) === false && $latestIntersection !== $endKey) {
+                # If the end position is an option, only that option matters, as retreading is not allowed.
+                $hasEndPosition = in_array($endKey, $nextIntersections);
+
+                # Generate all possible paths to take without retreading old ones.
+                foreach ($nextIntersections as $intersection => $pathLength) {
+                    # Prevent circular (infinite) paths.
+                    if (in_array($intersection, $progress) === true) {
+                        continue;
+                    }
+
+                    # Prevent not taking the path to the end when available.
+                    if ($hasEndPosition === true && $intersection !== $endKey) {
+                        continue;
+                    }
+
+                    # Generate the new path and calculate the paths length so far.
+                    $newPath = $path . '->' . $intersection;
+                    $newPaths[$newPath] = $totalPathLength + $pathLength;
+                }
+
+                # Remove the old, incomplete path from the dataset.
+                unset($paths[$path]);
+            }
+        }
+
+        # If there are no more path updates, stop generation.
+        if (empty($newPaths) === true) {
+            $pathfinding = false;
+        }
+
+        # Update the paths list.
+        $paths = array_merge($paths, $newPaths);
+    }
+
+    return $paths;
+}
+
+/**
  * Returns the solution for the first part of this day's puzzle.
  *
  * @param string[] $input The puzzle input.
@@ -221,12 +292,12 @@ function partTwo(array $input): int
     $end = findEndPosition($input);
 
     $intersections = mapIntersections($input, $start, $end);
+    $paths = generatePathsFromIntersections($intersections, $start, $end);
 
-    # Create all possible paths through the forest using the intersection map.
-    # Filter out any paths that do not end up at the end position.
-    # Find the maximum length.
+    $relevantPaths = array_filter(array_keys($paths), fn ($x) => str_ends_with($x, "$end[0],$end[1]"));
+    $relevantPathLengths = array_intersect_key($paths, array_flip($relevantPaths));
 
-    return count($intersections);
+    return max($relevantPathLengths);
 }
 
 ###############
