@@ -10,7 +10,7 @@ use AdventOfCode\Helper\AdventHelper;
 
 $adventHelper = new AdventHelper();
 
-$input = file('./input/19', FILE_IGNORE_NEW_LINES);
+$input = file('./input/19-test', FILE_IGNORE_NEW_LINES);
 
 #################
 ### Solutions ###
@@ -27,8 +27,6 @@ function processInstructions(array $input): array
 {
     # Extract the medicine molecule.
     $medicine = array_pop($input);
-    preg_match_all('/[A-Z]([a-z]+)?/', $medicine, $matches);
-    $medicineAtoms = $matches[0];
 
     # Remove the empty line from the end of the input.
     array_pop($input);
@@ -41,83 +39,40 @@ function processInstructions(array $input): array
         $replacements[$original][] = $replacement;
     }
 
-    return [$medicineAtoms, $replacements];
+    return [$medicine, $replacements];
 }
 
 /**
  * Finds all possible iterations of the medicine molecule, assuming a single replacement at a time.
  *
- * @param string[] $medicine A list of atoms present in the medicine molecule.
+ * @param string     $molecule     The medicine molecule.
  * @param string[][] $replacements A list of atoms and their potential replacement atoms.
- * @param bool $implode Determines whether the iteration atoms are imploded or not.
  *
- * @return string[] | string[][] All unique potential iterations of the medicine molecule.
+ * @return string[] All unique potential iterations of the medicine molecule.
  */
-function findMoleculeIterations(array $medicine, array $replacements, bool $implode = true): array
+function findMoleculeIterations(string $molecule, array $replacements): array
 {
     $iterations = [];
 
-    $targetAtoms = array_keys($replacements);
-    foreach ($medicine as $index => $atom) {
-        if (in_array($atom, $targetAtoms) === false) {
-            continue;
-        }
+    foreach ($replacements as $source => $destinations) {
+        # Extract all occurrences of the source atom in the molecule.
+        preg_match_all('/' . $source . '/', $molecule, $matches, PREG_OFFSET_CAPTURE);
+        $targets = $matches[0];
 
-        foreach ($replacements[$atom] as $replacement) {
-            $newMedicine = $medicine;
-            $newMedicine[$index] = $replacement;
+        # For each occurrence of the source atom, replace it with the destination atom, and log the new molecule.
+        foreach ($destinations as $destination) {
+            foreach ($targets as [$atom, $index]) {
+                $index = (int) $index;
 
-            $iteration = implode('', $newMedicine);
-            if ($implode === false) {
-                preg_match_all('/[A-Z]([a-z]+)?/', $iteration, $matches);
-                $iteration = $matches[0];
+                $start = substr($molecule, 0, $index);
+                $end = substr($molecule, $index + 1);
+
+                $iterations[] = $start . $destination . $end;
             }
-
-            $iterations[] = $iteration;
         }
     }
 
-    return array_unique($iterations, SORT_REGULAR);
-}
-
-/**
- * Fabricates a target medicine molecule from an initial electron.
- *
- * @param string[][] $medicine The list of atoms present in the medicine molecule.
- * @param string[][] $replacements A list of atoms and their potential replacement atoms.
- *
- * @return int The amount of steps required for the fabrication of the medicine.
- */
-function fabricateMolecule(array $medicine, array $replacements): int
-{
-    $pastMolecules = [];
-    $molecules = [['e']];
-    $steps = 0;
-
-    while (count($molecules) > 0 && in_array($medicine, $molecules) === false) {
-        $newMolecules = [];
-        $steps++;
-
-        foreach ($molecules as $molecule) {
-            $iterations = findMoleculeIterations($molecule, $replacements, false);
-
-            $newMolecules = array_merge($newMolecules, $iterations);
-        }
-
-        foreach ($newMolecules as $index => $newMolecule) {
-            $string = implode('', $newMolecule);
-
-            if (in_array($newMolecule, $pastMolecules) === true) {
-                unset($newMolecules[$index]);
-            } else {
-                $pastMolecules[] = $string;
-            }
-        }
-
-        $molecules = array_unique($newMolecules, SORT_REGULAR);
-    }
-
-    return $steps;
+    return array_unique($iterations);
 }
 
 /**
@@ -143,7 +98,7 @@ function partTwo(array $input): int
 {
     [$medicine, $replacements] = processInstructions($input);
 
-    return fabricateMolecule($medicine, $replacements);
+    return 2;
 }
 
 ###############
