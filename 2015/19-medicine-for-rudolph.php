@@ -10,7 +10,7 @@ use AdventOfCode\Helper\AdventHelper;
 
 $adventHelper = new AdventHelper();
 
-$input = file('./input/19-test', FILE_IGNORE_NEW_LINES);
+$input = file('./input/19', FILE_IGNORE_NEW_LINES);
 
 #################
 ### Solutions ###
@@ -59,13 +59,15 @@ function findMoleculeIterations(string $molecule, array $replacements): array
         preg_match_all('/' . $source . '/', $molecule, $matches, PREG_OFFSET_CAPTURE);
         $targets = $matches[0];
 
+        $length = strlen($source);
+
         # For each occurrence of the source atom, replace it with the destination atom, and log the new molecule.
         foreach ($destinations as $destination) {
             foreach ($targets as [$atom, $index]) {
-                $index = (int) $index;
+                $position = (int) $index + $length;
 
                 $start = substr($molecule, 0, $index);
-                $end = substr($molecule, $index + 1);
+                $end = substr($molecule, $position);
 
                 $iterations[] = $start . $destination . $end;
             }
@@ -73,6 +75,56 @@ function findMoleculeIterations(string $molecule, array $replacements): array
     }
 
     return array_unique($iterations);
+}
+
+function fabricateMolecule(string $original, array $replacements): int
+{
+    # Reverse the replacements array.
+    $rReplacements = [];
+    foreach ($replacements as $source => $destinations) {
+        foreach ($destinations as $destination) {
+            $rReplacements[$destination] = [$source];
+        }
+    }
+
+    uksort($rReplacements, fn ($x, $y) => strlen($y) <=> strlen($x));
+
+    # Initialize the queue and insert the starting point: [length, [steps, molecule]].
+    $queue = new SplMinHeap();
+    $queue->insert([strlen($original), [0, $original]]);
+
+    # List the fabricated molecules in order to not repeat already tested iterations.
+    $fabricated = [];
+
+    while ($queue->isEmpty() === false) {
+        # Extract the current base molecule.
+        [$length, [$steps, $molecule]] = $queue->extract();
+
+        # Check if the goal molecule has been reverse engineered.
+        if ($molecule === 'e') {
+            return $steps;
+        }
+
+        # Check if this molecule variant has already been tested.
+        if (in_array($molecule, $fabricated) === true) {
+            continue;
+        } else {
+            $fabricated[] = $molecule;
+        }
+
+        # Generate all new possible molecule variants.
+        $iterations = findMoleculeIterations($molecule, $rReplacements);
+        $newSteps = $steps + 1;
+
+        # Add each variant to the queue.
+        foreach ($iterations as $newMolecule) {
+            $newLength = strlen($newMolecule);
+
+            $queue->insert([$newLength, [$newSteps, $newMolecule]]);
+        }
+    }
+
+    return -1;
 }
 
 /**
@@ -98,7 +150,7 @@ function partTwo(array $input): int
 {
     [$medicine, $replacements] = processInstructions($input);
 
-    return 2;
+    return fabricateMolecule($medicine, $replacements);
 }
 
 ###############
