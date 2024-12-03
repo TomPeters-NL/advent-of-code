@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 ######################
 ### Initialization ###
 ######################
@@ -17,9 +19,11 @@ $input = file('./input/2');
 #################
 
 /**
- * @param string[] $input
+ * Organizes the list of reports and their tracked activity levels into processable data.
  *
- * @return int[][]
+ * @param string[] $input The puzzle input.
+ *
+ * @return int[][] A list of reports, each containing a list of levels of reactor activity.
  */
 function compileReports(array $input): array
 {
@@ -33,7 +37,9 @@ function compileReports(array $input): array
 }
 
 /**
- * @param int[][] $report
+ * Checks whether the report contains a series of (un)safe reactor activity.
+ *
+ * @param int[][] $report The report containing a single list of reactor activity levels.
  */
 function isSafeReport(array $report, bool $hasProblemDampener = false): bool
 {

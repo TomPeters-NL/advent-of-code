@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 ######################
 ### Initialization ###
 ######################
@@ -17,9 +19,11 @@ $input = file('./input/1');
 #################
 
 /**
- * @param string[] $input
+ * Organizes the two lists of location IDs provided by the historians.
  *
- * @return int[][]
+ * @param string[] $input The puzzle input.
+ *
+ * @return int[][] Two lists containing sorted location IDs from both historian groups.
  */
 function organizeLocationIds(array $input): array
 {

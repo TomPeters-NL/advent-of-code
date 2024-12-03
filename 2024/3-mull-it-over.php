@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 ######################
 ### Initialization ###
 ######################
@@ -17,6 +19,8 @@ $input = file('./input/3');
 #################
 
 /**
+ *
+ *
  * @param string[] $input
  *
  * @return string[]
@@ -83,8 +87,6 @@ function partOne(array $input): int
  * Returns the solution for the second part of this day's puzzle.
  *
  * @param string[] $input The puzzle input.
- *
- * @throws Exception
  */
 function partTwo(array $input): int
 {
