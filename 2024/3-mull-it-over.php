@@ -38,8 +38,6 @@ function parseInstructions(array $input, bool $includeConditionals = false): arr
 
 /**
  * @param string[] $instructions
- *
- * @throws Exception
  */
 function processInstructions(array $instructions): int
 {
@@ -73,8 +71,6 @@ function processInstructions(array $instructions): int
  * Returns the solution for the first part of this day's puzzle.
  *
  * @param string[] $input The puzzle input.
- *
- * @throws Exception
  */
 function partOne(array $input): int
 {
@@ -87,6 +83,8 @@ function partOne(array $input): int
  * Returns the solution for the second part of this day's puzzle.
  *
  * @param string[] $input The puzzle input.
+ *
+ * @throws Exception
  */
 function partTwo(array $input): int
 {
