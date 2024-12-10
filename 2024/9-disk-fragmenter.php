@@ -112,7 +112,7 @@ function organizeDiskByFile(array $blockMap): array
     foreach ($files as $fileId => ['size' => $fileSize, 'indices' => $fileIndices]) {
         $emptySpaces = findEmptySpace($blockMap, $fileSize);
 
-        if (empty($emptySpaces)) {
+        if (empty($emptySpaces) || max($fileIndices) < min($emptySpaces)) {
             continue;
         }
 
