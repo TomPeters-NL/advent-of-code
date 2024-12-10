@@ -18,9 +18,23 @@ $input = file('./input/9', FILE_IGNORE_NEW_LINES);
 ### Solutions ###
 #################
 
+/**
+ * Generates a multidimensional block map, which:
+ * - Contains all block IDs as a list.
+ * - Contains a list of file indices, indexed by their file ID.
+ * - Contains a list of available empty spaces, indexed by their starting index.
+ *
+ * @param array $diskMap The puzzle input.
+ *
+ * @return array{complete: array<int, string>, files: int[][], empty: int[]} The resulting block map.
+ */
 function generateBlockMap(array $diskMap): array
 {
-    $blockMap = [];
+    $blockMap = [
+        'complete' => [],
+        'files' => [],
+        'empty' => [],
+    ];
 
     $blockSizes = array_map('intval', str_split($diskMap[0]));
     $isFile = true;
@@ -29,9 +43,21 @@ function generateBlockMap(array $diskMap): array
     foreach ($blockSizes as $blockSize) {
         $blockId = $isFile ? $fileId++ : '.';
 
+        # Generate the file or empty blocks.
         $block = array_fill(0, $blockSize, $blockId);
 
-        $blockMap = array_merge($blockMap, $block);
+        # Add the blocks to the list of block IDs.
+        $blockMap['complete'] = array_merge($blockMap['complete'], $block);
+
+        $blockIndices = array_keys($blockMap['complete']);
+        if ($isFile) {
+            # If the block is a file, list the indices it spans by its file ID.
+            $blockMap['files'][$blockId] = array_slice($blockIndices, -$blockSize, $blockSize);
+        } elseif ($blockSize > 0) {
+            # If the block is empty, list the amount of empty spaces by its starting index.
+            $index = array_slice($blockIndices, -$blockSize, 1)[0];
+            $blockMap['empty'][$index] = $blockSize;
+        }
 
         $isFile = !$isFile;
     }
@@ -39,6 +65,14 @@ function generateBlockMap(array $diskMap): array
     return $blockMap;
 }
 
+/**
+ * Reorganizes the disk's contents by individual block, rather than complete files.
+ * This just further fragments the files, but hey, what do you expect from an amphipod?
+ *
+ * @param array<int, string> $blockMap The complete block map.
+ *
+ * @return array<int, string> The (re)organized block map.
+ */
 function organizeDiskByBlock(array $blockMap): array
 {
     $organizedBlockMap = [];
@@ -60,74 +94,85 @@ function organizeDiskByBlock(array $blockMap): array
     return $organizedBlockMap;
 }
 
-function getFileDetails(array $blockMap): array
+/**
+ * Find available empty spaces which would fit a target file.
+ *
+ * @param int[] $emptySpaces A list of available empty spaces, indexed by their starting index in the block map.
+ * @param int[] $fileIndices A list of file indices in the block map.
+ *
+ * @return int[] A list of empty spaces that can hold the indicated file.
+ */
+function findEmptySpace(array &$emptySpaces, array $fileIndices): array
 {
-    $files = [];
+    $validEmptySpaces = [];
 
-    foreach ($blockMap as $index => $blockId) {
-        if ($blockId === '.') {
+    $fileSize = count($fileIndices);
+    $lastFileIndex = max($fileIndices);
+
+    foreach ($emptySpaces as $spaceIndex => $spaceSize) {
+        # Skip the current space if it isn't large enough or if it would cause a file to be moved forward.
+        if ($lastFileIndex < $spaceIndex || $spaceSize < $fileSize) {
             continue;
         }
 
-        if (array_key_exists($blockId, $files)) {
-            $files[$blockId]['size']++;
-            $files[$blockId]['indices'][] = $index;
-        } else {
-            $files[$blockId] = [
-                'size' => 1,
-                'indices' => [$index],
-            ];
+        $lastEmptySpaceIndex = $spaceIndex + $fileSize;
+        $validEmptySpaces = range($spaceIndex, $lastEmptySpaceIndex - 1);
+
+        $remainingSpace = $spaceSize - $fileSize;
+
+        if ($remainingSpace !== 0) {
+            $emptySpaces[$lastEmptySpaceIndex] = $remainingSpace;
         }
+
+        unset($emptySpaces[$spaceIndex]);
+
+        ksort($emptySpaces);
+
+        break;
     }
 
-    return $files;
+    return $validEmptySpaces;
 }
 
-function findEmptySpace(array $blockMap, int $size): array
+/**
+ * Reorganizes the disk's contents by file, leaving more empty spaces, but preventing file fragmentation.
+ *
+ * @param array<int, string> $blockMap The complete block map.
+ * @param int[][]            $files A list of file indices, indexed by their file ID.
+ * @param int[]              $emptySpaces A list of available empty spaces, indexed by their starting index in the block map.
+ *
+ * @return array<int, string> The (re)organized block map.
+ */
+function organizeDiskByFile(array $blockMap, array $files, array $emptySpaces): array
 {
-    $emptySpaces = [];
-    $sequence = 0;
+    $files = array_reverse($files, true);
 
-    foreach ($blockMap as $blockIndex => $blockId) {
-        if ($blockId !== '.') {
-            $sequence = 0;
-            continue;
-        }
+    foreach ($files as $fileId => $fileIndices) {
+        $validEmptySpaces = findEmptySpace($emptySpaces, $fileIndices);
 
-        if (++$sequence === $size) {
-            $emptySpaces = range($blockIndex - $size + 1, $blockIndex);
-
-            break;
-        }
-    }
-
-
-    return $emptySpaces;
-}
-
-function organizeDiskByFile(array $blockMap): array
-{
-    $files = array_reverse(getFileDetails($blockMap), true);
-
-    foreach ($files as $fileId => ['size' => $fileSize, 'indices' => $fileIndices]) {
-        $emptySpaces = findEmptySpace($blockMap, $fileSize);
-
-        if (empty($emptySpaces) || max($fileIndices) < min($emptySpaces)) {
+        if (empty($validEmptySpaces)) {
             continue;
         }
 
         foreach ($fileIndices as $fileIndex) {
-            $blockMap[$fileIndex] = 'x';
+            $blockMap[$fileIndex] = '.';
         }
 
-        foreach ($emptySpaces as $spaceIndex) {
+        foreach ($validEmptySpaces as $spaceIndex) {
             $blockMap[$spaceIndex] = $fileId;
         }
     }
 
-    return array_map(fn ($blockId) => $blockId === 'x' ? '.' : $blockId, $blockMap);
+    return $blockMap;
 }
 
+/**
+ * Calculates a new checksum for a block map.
+ *
+ * @param array<int, string> $organizedBlockMap The organized, or defragmented, block map.
+ *
+ * @return int The new checksum.
+ */
 function createChecksum(array $organizedBlockMap): int
 {
     $checksum = 0;
@@ -152,7 +197,7 @@ function partOne(array $input): int
 {
     $blockMap = generateBlockMap($input);
 
-    $organizedBlockMap = organizeDiskByBlock($blockMap);
+    $organizedBlockMap = organizeDiskByBlock($blockMap['complete']);
 
     return createChecksum($organizedBlockMap);
 }
@@ -166,7 +211,7 @@ function partTwo(array $input): int
 {
     $blockMap = generateBlockMap($input);
 
-    $organizedBlockMap = organizeDiskByFile($blockMap);
+    $organizedBlockMap = organizeDiskByFile($blockMap['complete'], $blockMap['files'], $blockMap['empty']);
 
     return createChecksum($organizedBlockMap);
 }
