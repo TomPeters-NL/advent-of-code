@@ -18,39 +18,44 @@ $input = file('./input/11', FILE_IGNORE_NEW_LINES);
 ### Solutions ###
 #################
 
-function blinkAndObserve(int $stone, array &$stoneCache, int $blinks = 0, int $blinkLimit = 25): int
+/**
+ * Blinks and counts the amount of stones observed.
+ *
+ * @param int   $stone      The current number engraved on the stone.
+ * @param int   $blinks     The amount of blinks (recursion) remaining.
+ * @param int[] $stoneCache A list of the number of stones per combination of stone number and remaining blinks.
+ *
+ * @return int The total number of stones observed.
+ */
+function blinkAndObserve(int $stone, int $blinks, array &$stoneCache): int
 {
-    $blinks++;
-
-    $nextStones = $stoneCache[$stone] ?? [];
-
-    if (empty($nextStones)) {
-        $digits = strlen((string) $stone);
-
-        if ($stone === 0) {
-            $nextStones = [1];
-        } elseif ($digits % 2 === 0) {
-            $splitStone = array_chunk(str_split((string) $stone), $digits / 2);
-
-            foreach ($splitStone as $stoneFragments) {
-                $nextStones[] = (int) implode('', $stoneFragments);
-            }
-        } else {
-            $nextStones = [2024 * $stone];
-        }
-
-        $stoneCache[$stone] = $nextStones;
+    # If no blinks remain, simply return the final stone.
+    if ($blinks === 0) {
+        return 1;
     }
 
-    if ($blinks === $blinkLimit) {
-        return count($nextStones);
+    $cacheKey = $stone . '-' . $blinks;
+
+    # If the combination of current stone number and the amount of blinks remaining is already in the cache, the amount of stones is known without need of further recursion.
+    if (array_key_exists($cacheKey, $stoneCache)) {
+        return $stoneCache[$cacheKey];
     }
 
-    $stones = 0;
+    $blinks--;
 
-    foreach ($nextStones as $nextStone) {
-        $stones += blinkAndObserve($nextStone, $stoneCache, $blinks);
+    if ($stone === 0) {
+        $stones = blinkAndObserve(1, $blinks, $stoneCache);
+    } elseif (($digits = strlen((string) $stone)) % 2 === 0) {
+        $firstHalf = (int) substr((string) $stone, 0, $digits / 2);
+        $secondHalf = (int) substr((string) $stone, $digits / 2);
+
+        $stones = blinkAndObserve($firstHalf, $blinks, $stoneCache) + blinkAndObserve($secondHalf, $blinks, $stoneCache);
+    } else {
+        $stones = blinkAndObserve(2024 * $stone, $blinks, $stoneCache);
     }
+
+    # Cache the result to prevent unnecessary recursion in future blinks.
+    $stoneCache[$cacheKey] = $stones;
 
     return $stones;
 }
@@ -68,7 +73,7 @@ function partOne(array $input): int
     $stones = array_map('intval', explode(' ', $input[0]));
 
     foreach ($stones as $stone) {
-        $totalStones += blinkAndObserve($stone, $stoneCache);
+        $totalStones += blinkAndObserve($stone, 25, $stoneCache);
     }
 
     return $totalStones;
@@ -81,7 +86,16 @@ function partOne(array $input): int
  */
 function partTwo(array $input): int
 {
-    return 2;
+    $totalStones = 0;
+
+    $stoneCache = [];
+    $stones = array_map('intval', explode(' ', $input[0]));
+
+    foreach ($stones as $stone) {
+        $totalStones += blinkAndObserve($stone, 75, $stoneCache);
+    }
+
+    return $totalStones;
 }
 
 ###############
