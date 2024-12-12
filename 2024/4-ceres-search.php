@@ -109,7 +109,7 @@ class Day4
      *
      * @param string[] $input The puzzle input.
      */
-    function partOne(array $input): int
+    private function partOne(array $input): int
     {
         $wordSearch = $this->prepareWordSearch($input);
 
@@ -133,7 +133,7 @@ class Day4
      *
      * @param string[] $input The puzzle input.
      */
-    function partTwo(array $input): int
+    private function partTwo(array $input): int
     {
         $wordSearch = $this->prepareWordSearch($input);
 
@@ -164,7 +164,7 @@ class Day4
     ### Results ###
     ###############
 
-    function printSolutions(): void
+    public function printSolutions(): void
     {
         $this->adventHelper->printSolutions(
             $this->partOne($this->input),

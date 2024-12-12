@@ -107,7 +107,7 @@ class Day10
      *
      * @return int[]
      */
-    function partOneAndTwo(array $input): array
+    private function partOneAndTwo(array $input): array
     {
         $trailheads = $this->findTrailheads($input);
 
@@ -131,7 +131,7 @@ class Day10
     ### Results ###
     ###############
 
-    function printSolutions(): void
+    public function printSolutions(): void
     {
         $this->adventHelper->printSolutions(
             ...$this->partOneAndTwo($this->input),

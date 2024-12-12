@@ -202,7 +202,7 @@ class Day9
      *
      * @param string[] $input The puzzle input.
      */
-    function partOne(array $input): int
+    private function partOne(array $input): int
     {
         $blockMap = $this->generateBlockMap($input);
 
@@ -216,7 +216,7 @@ class Day9
      *
      * @param string[] $input The puzzle input.
      */
-    function partTwo(array $input): int
+    private function partTwo(array $input): int
     {
         $blockMap = $this->generateBlockMap($input);
 
@@ -229,7 +229,7 @@ class Day9
     ### Results ###
     ###############
 
-    function printSolutions(): void
+    public function printSolutions(): void
     {
         $this->adventHelper->printSolutions(
             $this->partOne($this->input),

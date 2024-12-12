@@ -90,7 +90,7 @@ class Day7
      *
      * @param string[] $input The puzzle input.
      */
-    function partOne(array $input): int
+    private function partOne(array $input): int
     {
         $calibrationResult = 0;
 
@@ -114,7 +114,7 @@ class Day7
      *
      * @param string[] $input The puzzle input.
      */
-    function partTwo(array $input): int
+    private function partTwo(array $input): int
     {
         $calibrationResult = 0;
 
@@ -137,7 +137,7 @@ class Day7
     ### Results ###
     ###############
 
-    function printSolutions(): void
+    public function printSolutions(): void
     {
         $this->adventHelper->printSolutions(
             $this->partOne($this->input),
