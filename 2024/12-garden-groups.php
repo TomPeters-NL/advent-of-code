@@ -23,7 +23,25 @@ class Day12
     ### Logic ###
     #############
 
-    # Add logic here. :)
+    private function generateCropMap(): array
+    {
+        $crops = [];
+
+        return $crops;
+    }
+
+    private function mapPlot(array $garden, int $x, int $y, array &$mapped): array
+    {
+        $crops = [];
+
+        $crops[] = [
+            'crop' => '',
+            'position' => $x . ',' . $y,
+            'sides' => 0,
+        ];
+
+        return $crops;
+    }
 
     #################
     ### Solutions ###
@@ -31,29 +49,29 @@ class Day12
 
     /**
      * Returns the solution for the first part of this day's puzzle.
-     *
-     * @param string[] $input The puzzle input.
      */
-    function partOne(array $input): int
+    private function partOne(): int
     {
-        return 1;
+        $price = 0;
+
+        return $price;
     }
 
     /**
      * Returns the solution for the second part of this day's puzzle.
-     *
-     * @param string[] $input The puzzle input.
      */
-    function partTwo(array $input): int
+    private function partTwo(): int
     {
-        return 2;
+        $price = 0;
+
+        return $price;
     }
 
     ###############
     ### Results ###
     ###############
 
-    function printSolutions(): void
+    public function printSolutions(): void
     {
         $this->adventHelper->printSolutions(
             $this->partOne($this->input),
