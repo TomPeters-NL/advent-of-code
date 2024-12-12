@@ -2,84 +2,102 @@
 
 declare(strict_types=1);
 
-######################
-### Initialization ###
-######################
+namespace AdventOfCode\Year2024;
 
 require_once(__DIR__ . '/../helper/AdventHelper.php');
 
 use AdventOfCode\Helper\AdventHelper;
 
-$adventHelper = new AdventHelper();
-
-$input = file('./input/1');
-
-#################
-### Solutions ###
-#################
-
-/**
- * Organizes the two lists of location IDs provided by the historians.
- *
- * @param string[] $input The puzzle input.
- *
- * @return int[][] Two lists containing sorted location IDs from both historian groups.
- */
-function organizeLocationIds(array $input): array
+class Day1
 {
-    $organizedLists = [];
+    private AdventHelper $adventHelper;
+    private array $input;
 
-    foreach ($input as $line) {
-        list($first, $second) = explode('   ', $line);
-
-        $organizedLists[0][] = (int) $first;
-        $organizedLists[1][] = (int) $second;
+    public function __construct()
+    {
+        $this->adventHelper = new AdventHelper();
+        $this->input = file('./input/1', FILE_IGNORE_NEW_LINES);
     }
 
-    sort($organizedLists[0]);
-    sort($organizedLists[1]);
+    #############
+    ### Logic ###
+    #############
 
-    return $organizedLists;
-}
+    /**
+     * Organizes the two lists of location IDs provided by the historians.
+     *
+     * @param string[] $input The puzzle input.
+     *
+     * @return int[][] Two lists containing sorted location IDs from both historian groups.
+     */
+    function organizeLocationIds(array $input): array
+    {
+        $organizedLists = [];
 
-/**
- * Returns the solution for the first part of this day's puzzle.
- *
- * @param string[] $input The puzzle input.
- */
-function partOne(array $input): int
-{
-    $totalDistance = 0;
+        foreach ($input as $line) {
+            list($first, $second) = explode('   ', $line);
 
-    list($firstList, $secondList) = organizeLocationIds($input);
+            $organizedLists[0][] = (int) $first;
+            $organizedLists[1][] = (int) $second;
+        }
 
-    for ($i = 0; $i < count($firstList); $i++) {
-        $totalDistance += abs($secondList[$i] - $firstList[$i]);
+        sort($organizedLists[0]);
+        sort($organizedLists[1]);
+
+        return $organizedLists;
     }
 
-    return $totalDistance;
-}
+    #################
+    ### Solutions ###
+    #################
 
-/**
- * Returns the solution for the second part of this day's puzzle.
- *
- * @param string[] $input The puzzle input.
- */
-function partTwo(array $input): int
-{
-    $similarityScore = 0;
+    /**
+     * Returns the solution for the first part of this day's puzzle.
+     *
+     * @param string[] $input The puzzle input.
+     */
+    function partOne(array $input): int
+    {
+        $totalDistance = 0;
 
-    list($firstList, $secondList) = organizeLocationIds($input);
+        list($firstList, $secondList) = $this->organizeLocationIds($input);
 
-    foreach ($firstList as $locationId) {
-        $similarityScore += $locationId * count(array_keys($secondList, $locationId));
+        for ($i = 0; $i < count($firstList); $i++) {
+            $totalDistance += abs($secondList[$i] - $firstList[$i]);
+        }
+
+        return $totalDistance;
     }
 
-    return $similarityScore;
+    /**
+     * Returns the solution for the second part of this day's puzzle.
+     *
+     * @param string[] $input The puzzle input.
+     */
+    function partTwo(array $input): int
+    {
+        $similarityScore = 0;
+
+        list($firstList, $secondList) = $this->organizeLocationIds($input);
+
+        foreach ($firstList as $locationId) {
+            $similarityScore += $locationId * count(array_keys($secondList, $locationId));
+        }
+
+        return $similarityScore;
+    }
+
+    ###############
+    ### Results ###
+    ###############
+
+    function printSolutions(): void
+    {
+        $this->adventHelper->printSolutions(
+            $this->partOne($this->input),
+            $this->partTwo($this->input),
+        );
+    }
 }
 
-###############
-### Results ###
-###############
-
-$adventHelper->printSolutions(partOne($input), partTwo($input));
+(new Day1())->printSolutions();

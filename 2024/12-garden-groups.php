@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AdventOfCode\Year202X;
+namespace AdventOfCode\Year2024;
 
 require_once(__DIR__ . '/../helper/AdventHelper.php');
 
 use AdventOfCode\Helper\AdventHelper;
 
-class DayX
+class Day12
 {
     private AdventHelper $adventHelper;
     private array $input;
@@ -16,7 +16,7 @@ class DayX
     public function __construct()
     {
         $this->adventHelper = new AdventHelper();
-        $this->input = file('./input/X', FILE_IGNORE_NEW_LINES);
+        $this->input = file('./input/12', FILE_IGNORE_NEW_LINES);
     }
 
     #############
@@ -62,4 +62,4 @@ class DayX
     }
 }
 
-(new DayX())->printSolutions();
+(new Day12())->printSolutions();

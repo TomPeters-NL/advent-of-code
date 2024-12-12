@@ -11,7 +11,30 @@ class AdventHelper
         $this->startTime = microtime(true);
     }
 
-    public function printSolutions(string|int $alpha, string|int $beta): void
+    /**
+     * Converts a one-dimensional string array to a two-dimensional array.
+     *
+     * @param string[] $list The string array to be converted.
+     * @param bool     $castToIntegers Determines whether the values in the list should be cast to integers.
+     *
+     * @return string[][] | int[][] The two-dimensional array.
+     */
+    public function convertStringListToMap(array $list, bool $castToIntegers = false): array
+    {
+        return $castToIntegers
+            ? array_map(fn ($row) => array_map('intval', str_split(trim($row))), $list)
+            : array_map(fn ($row) => str_split(trim($row)), $list);
+    }
+
+    /**
+     * Prints two formatted values, usually the day's Part 1 and Part 2 solutions.
+     *
+     * @param string|int $alpha The first printed result.
+     * @param string|int $beta The second printed result.
+     *
+     * @return void
+     */
+    public function printSolutions(string | int $alpha, string | int $beta): void
     {
         $endTime = microtime(true);
         $duration = $endTime - $this->startTime;
@@ -22,7 +45,7 @@ class AdventHelper
         $solutionBeta = "| Solution #2: $beta";
 
         $lengthAlpha = strlen($solutionAlpha);
-        $lengthBeta  = strlen($solutionBeta);
+        $lengthBeta = strlen($solutionBeta);
         $lengthTime = strlen($time);
         $length = max($lengthAlpha, $lengthBeta, $lengthTime);
 
