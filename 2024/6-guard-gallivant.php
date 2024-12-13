@@ -9,6 +9,7 @@ require_once(__DIR__ . '/../helper/AdventHelper.php');
 use AdventOfCode\Helper\AdventHelper;
 use UnexpectedValueException;
 
+/** A day in the Advent of Code, containing solutions to a two-part puzzle. */
 class Day6
 {
     private AdventHelper $adventHelper;

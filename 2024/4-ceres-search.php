@@ -8,6 +8,7 @@ require_once(__DIR__ . '/../helper/AdventHelper.php');
 
 use AdventOfCode\Helper\AdventHelper;
 
+/** A day in the Advent of Code, containing solutions to a two-part puzzle. */
 class Day4
 {
     private AdventHelper $adventHelper;

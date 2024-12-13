@@ -38,8 +38,20 @@ class AdventHelper
     {
         $endTime = microtime(true);
         $duration = $endTime - $this->startTime;
-        $milliseconds = number_format($duration * 1000, 2);
-        $time = "| Time: $milliseconds ms";
+
+        if ($duration < 1) {
+            $milliseconds = number_format($duration * 1000, 2);
+            $formattedTime = "$milliseconds ms";
+        } elseif ($duration > 60) {
+            $minutes = floor($duration / 60);
+            $seconds = number_format($duration - $minutes * 60, 2);
+            $formattedTime = "$minutes m $seconds s";
+        } else {
+            $seconds = number_format($duration, 2);
+            $formattedTime = "$seconds s";
+        }
+
+        $time = "| Time: $formattedTime";
 
         $solutionAlpha = "| Solution #1: $alpha";
         $solutionBeta = "| Solution #2: $beta";
