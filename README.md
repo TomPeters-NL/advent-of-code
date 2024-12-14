@@ -7,3 +7,11 @@ These are my personal solutions to the puzzles, some I thought of myself, others
 
 ## 📝 Requirements
 - **PHP**. Required for the solutions for 2015, 2016, 2023 and 2024.
+
+## 💡 Tips & Tricks
+### Mathematics
+> _MathJax is an open-source JavaScript display engine for LaTeX, MathML, and AsciiMath notation that works in all modern browsers, with built-in support for assistive technology like screen readers._
+
+Documenting mathematics in Markdown used to be such an arduous process, but with MathJax I actually enjoy it now.
+
+There's even a handy [cheat sheet](https://jojozhuang.github.io/tutorial/mathjax-cheat-sheet-for-mathematical-notation/)!
