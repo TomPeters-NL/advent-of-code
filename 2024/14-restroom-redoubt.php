@@ -9,7 +9,7 @@ require_once(__DIR__ . '/../helper/AdventHelper.php');
 use AdventOfCode\Helper\AdventHelper;
 
 /** A robot patrolling the lobby of Easter Bunny Headquarters. */
-class Robot
+class LobbyRobot
 {
     /**
      * @param int $x  The current horizontal position in the lobby.
@@ -45,7 +45,7 @@ class Day14
     /**
      * Generates a list of all robots patrolling the lobby.
      *
-     * @return Robot[] A list of robots.
+     * @return LobbyRobot[] A list of robots.
      */
     private function identifyRobots(): array
     {
@@ -54,7 +54,7 @@ class Day14
         foreach ($this->input as $description) {
             preg_match_all('/-?\d+/', $description, $numbers);
 
-            $robots[] = new Robot(
+            $robots[] = new LobbyRobot(
                 (int) $numbers[0][0],
                 (int) $numbers[0][1],
                 (int) $numbers[0][2],
@@ -68,12 +68,12 @@ class Day14
     /**
      * Calculates the position of each of the provided robots after the specified amount of seconds have passed.
      *
-     * @param Robot[] $robots      A list of robots patrolling the lobby.
-     * @param int     $seconds     Determines after how many seconds the positions should be calculated.
-     * @param int     $lobbyWidth  The width of the lobby.
-     * @param int     $lobbyLength The length of the lobby.
+     * @param LobbyRobot[] $robots      A list of robots patrolling the lobby.
+     * @param int          $seconds     Determines after how many seconds the positions should be calculated.
+     * @param int          $lobbyWidth  The width of the lobby.
+     * @param int          $lobbyLength The length of the lobby.
      *
-     * @return Robot[] A list of robots with updated positions.
+     * @return LobbyRobot[] A list of robots with updated positions.
      */
     private function updateRobotLocations(array $robots, int $seconds, int $lobbyWidth, int $lobbyLength): array
     {
@@ -96,9 +96,9 @@ class Day14
     /**
      * Calculates the lobby safety factor based on the positions of the patrolling robots.
      *
-     * @param Robot[] $robots      A list of robots patrolling the lobby.
-     * @param int     $lobbyWidth  The width of the lobby.
-     * @param int     $lobbyLength The length of the lobby.
+     * @param LobbyRobot[] $robots      A list of robots patrolling the lobby.
+     * @param int          $lobbyWidth  The width of the lobby.
+     * @param int          $lobbyLength The length of the lobby.
      *
      * @return int The safety factor.
      */
@@ -139,10 +139,10 @@ class Day14
     /**
      * Visualizes and stores the positions of all robots in a file, for each second in the specified time limit.
      *
-     * @param Robot[] $robots      A list of robots patrolling the lobby.
-     * @param int     $lobbyWidth  The width of the lobby.
-     * @param int     $lobbyLength The length of the lobby.
-     * @param int     $timeLimit   The limit for the amount of visualizations in seconds.
+     * @param LobbyRobot[] $robots      A list of robots patrolling the lobby.
+     * @param int          $lobbyWidth  The width of the lobby.
+     * @param int          $lobbyLength The length of the lobby.
+     * @param int          $timeLimit   The limit for the amount of visualizations in seconds.
      *
      * @return void No return value, as finding the Easter Egg requires human analysis.
      */
