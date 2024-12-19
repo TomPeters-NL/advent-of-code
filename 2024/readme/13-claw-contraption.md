@@ -1,4 +1,12 @@
-## Legend
+## Introduction.
+The tropical island resort the Historians arrived at has an arcade full of claw machines!
+
+Each of these claw machines has two buttons, A and B, and a single prize.
+Furthermore, each button moves the machine's claw by a different horizontal and vertical distance.
+
+The goal is to find out the exact amount of button presses of each button is needed to win the machine's prize, if possible at all.
+
+## Legend.
 | Variable | Explanation                                         |
 |----------|-----------------------------------------------------|
 | $α$      | The amount of presses of button A.                  |
@@ -10,7 +18,7 @@
 | $p_x$    | The horizontal (X) coordinate of the prize.         |
 | $p_y$    | The vertical (Y) coordinate of the prize.           |
 
-## Mathematics
+## Mathematics.
 The basic formulas for calculating the claw machine movements towards the prize are:
 
 $$
