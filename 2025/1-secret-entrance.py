@@ -30,15 +30,14 @@ start_time = time()
 # Part  One #
 # # # # # # #
 
+turns = [int(line.strip().replace('L', '-').replace('R', '')) for line in input.splitlines()]
+
 solution_one = 0
-safe_value = 50
+dial = 50
 
-input_one = input.replace('L', '-').replace('R', '+')
-operations = input_one.splitlines()
-
-for operation in operations:
-    safe_value = eval(str(safe_value) + operation) % 100
-    if safe_value == 0: solution_one += 1
+for turn in turns:
+    dial = (dial + turn) % 100
+    if dial == 0: solution_one += 1
 
 end_time_one = time()
 
@@ -48,16 +47,24 @@ end_time_one = time()
 
 start_time_two = time()
 
+input_two = input
+turns = [int(line.strip().replace('L', '-').replace('R', '')) for line in input.splitlines()]
+
 solution_two = 0
-safe_value = 50
+dial = 50
 
-input_two = input.replace('L', '-').replace('R', '+')
-operations = input_two.splitlines()
+for turn in turns: # 6689?
+    complete_rotations, remaining_turns = divmod(abs(turn), 100)
 
-for operation in operations:
-    raw_value = eval(str(safe_value) + operation)
-    solution_two += abs(raw_value // 100)
-    safe_value = raw_value % 100
+    solution_two += complete_rotations
+
+    if turn < 0 and dial != 0 and dial - remaining_turns <= 0:
+        solution_two += 1
+
+    if turn >= 0 and dial + remaining_turns >= 100:
+        solution_two += 1
+
+    dial = (dial + turn) % 100
 
 end_time_two = time()
 
