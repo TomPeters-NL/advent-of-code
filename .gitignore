@@ -1,4 +1,5 @@
 /.idea
+/.venv
 /package.xml
 /2015/input/*
 /2016/input/*

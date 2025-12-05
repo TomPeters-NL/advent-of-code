@@ -1,36 +1,37 @@
-from time import time
 from pathlib import Path
+from time import time
+
 
 # # # # # #
 # Methods #
 # # # # # #
 
-def get_duration (diff: float) -> str:
+def get_duration(diff: float) -> str:
     if diff < 1:
         milliseconds = diff * 1000
-        
+
         return f"{milliseconds:.2f}" + ' ms'
     elif diff > 60:
         minutes = diff // 60
         seconds = diff % 60
-        
+
         return '{minutes} m ' + f"{seconds:.2f}" + ' s'
     else:
         return f"{diff:.2f}" + ' s'
+
 
 # # # # # # # # # #
 # Initialization  #
 # # # # # # # # # #
 
-input_path = Path(__file__).resolve().parent.joinpath('input/1.txt')
-input = input_path.read_text()
+raw_input = Path(__file__).resolve().parent.joinpath('input/1.txt').read_text()
 start_time = time()
 
 # # # # # # #
 # Part  One #
 # # # # # # #
 
-turns = [int(line.strip().replace('L', '-').replace('R', '')) for line in input.splitlines()]
+turns = [int(line.strip().replace('L', '-').replace('R', '')) for line in raw_input.splitlines()]
 
 solution_one = 0
 dial = 50
@@ -47,13 +48,13 @@ end_time_one = time()
 
 start_time_two = time()
 
-input_two = input
-turns = [int(line.strip().replace('L', '-').replace('R', '')) for line in input.splitlines()]
+input_two = raw_input
+turns = [int(line.strip().replace('L', '-').replace('R', '')) for line in raw_input.splitlines()]
 
 solution_two = 0
 dial = 50
 
-for turn in turns: # 6689?
+for turn in turns:  # 6689?
     complete_rotations, remaining_turns = divmod(abs(turn), 100)
 
     solution_two += complete_rotations

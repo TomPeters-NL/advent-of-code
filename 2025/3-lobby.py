@@ -1,29 +1,30 @@
-from time import time
 from pathlib import Path
+from time import time
+
 
 # # # # # #
 # Methods #
 # # # # # #
 
-def get_duration (diff: float) -> str:
+def get_duration(diff: float) -> str:
     if diff < 1:
         milliseconds = diff * 1000
-        
+
         return f"{milliseconds:.2f}" + ' ms'
     elif diff > 60:
         minutes = diff // 60
         seconds = diff % 60
-        
+
         return '{minutes} m ' + f"{seconds:.2f}" + ' s'
     else:
         return f"{diff:.2f}" + ' s'
+
 
 # # # # # # # # #
 # Introduction  #
 # # # # # # # # #
 
-input_path = Path(__file__).resolve().parent.joinpath('input/3.txt')
-input = input_path.read_text()
+raw_input = Path(__file__).resolve().parent.joinpath('input/3.txt').read_text()
 start_time_one = time()
 solution_one = 0
 
@@ -31,7 +32,7 @@ solution_one = 0
 # Part  One #
 # # # # # # #
 
-for bank in input.splitlines():
+for bank in raw_input.splitlines():
     batteries = list(bank)
 
     joltage = ''
@@ -59,7 +60,7 @@ solution_two = 0
 # Part  Two #
 # # # # # # #
 
-for bank in input.splitlines():
+for bank in raw_input.splitlines():
     batteries = list(bank)
 
     joltage = ''
