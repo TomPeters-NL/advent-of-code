@@ -16,7 +16,7 @@ def get_duration(diff: float) -> str:
         minutes = diff // 60
         seconds = diff % 60
 
-        return '{minutes} m ' + f"{seconds:.2f}" + ' s'
+        return f"{minutes} m {seconds:.2f} s"
     else:
         return f"{diff:.2f}" + ' s'
 
