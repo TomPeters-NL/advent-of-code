@@ -1,29 +1,19 @@
 from pathlib import Path
 from time import time
 
+from helper.advent_helper import print_solutions
+
 
 # # # # # #
 # Methods #
 # # # # # #
-
-def get_duration(diff: float) -> str:
-    if diff < 1:
-        milliseconds = diff * 1000
-
-        return f"{milliseconds:.2f}" + ' ms'
-    elif diff > 60:
-        minutes = diff // 60
-        seconds = diff % 60
-
-        return f"{minutes} m {seconds:.2f} s"
-    else:
-        return f"{diff:.2f}" + ' s'
 
 def get_distance(junction_box_a: tuple, junction_box_b: tuple) -> float:
     (a_x, a_y, a_z) = junction_box_a
     (b_x, b_y, b_z) = junction_box_b
 
     return ((a_x - b_x) ** 2 + (a_y - b_y) ** 2 + (a_z - b_z) ** 2) ** 0.5
+
 
 # # # # # # # # #
 # Introduction  #
@@ -32,6 +22,7 @@ def get_distance(junction_box_a: tuple, junction_box_b: tuple) -> float:
 raw_input = Path(__file__).resolve().parent.joinpath('input/8.txt').read_text()
 start_time_one = time()
 solution_one = 1
+solution_two = 0
 
 # # # # # # #
 # Part  One #
@@ -110,9 +101,7 @@ for i in range(3):
 # Interlude #
 # # # # # # #
 
-end_time_one = time()
 start_time_two = time()
-solution_two = 0
 
 # # # # # # #
 # Part  Two #
@@ -189,24 +178,4 @@ for connection in range(len(distances)):
 # Epilogue  #
 # # # # # # #
 
-end_time_two = time()
-
-# # # # # # #
-# Solutions #
-# # # # # # #
-
-print('Solution #1: ' + str(solution_one))
-print('Solution #2: ' + str(solution_two))
-print()
-
-# # # # # #
-# Timing  #
-# # # # # #
-
-duration_total = end_time_two - start_time_one
-duration_one = end_time_one - start_time_one
-duration_two = end_time_two - start_time_two
-
-print('Time: ' + get_duration(duration_total))
-print('Time #1: ' + get_duration(duration_one))
-print('Time #2: ' + get_duration(duration_two))
+print_solutions(solution_one, solution_two, start_time_one, start_time_two)
