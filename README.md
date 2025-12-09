@@ -8,6 +8,7 @@ These are my personal solutions to the puzzles, some I thought of myself, others
 ## 📝 Requirements
 - **PHP**. Required for the solutions for 2015, 2016, 2023, and 2024.
 - **Python**. Required for the solutions for 2016, and 2025.
+  - Libraries: `python3-tk`, `matplotlib` and `shapely`.
 
 ## 💡 Tips & Tricks
 ### Mathematics
