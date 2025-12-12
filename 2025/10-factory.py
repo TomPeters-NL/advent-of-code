@@ -97,7 +97,7 @@ for entry in manual:
 for machine in machines:
     button_presses = [0] * len(machine['buttons'])
     matrix = generate_matrix(machine['buttons'], machine['joltage_diagram'])
-    exit()
+    solution_two = 'I tried so hard, and got so far. But in the end, I gave up.'
 
 # # # # # # #
 # Epilogue  #
