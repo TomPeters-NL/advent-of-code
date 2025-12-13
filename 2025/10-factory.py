@@ -1,6 +1,8 @@
+from functools import cache
+from itertools import combinations
 from pathlib import Path
 from time import time
-from collections import deque
+from collections import defaultdict
 
 from helper.advent_helper import print_solutions
 
@@ -8,16 +10,79 @@ from helper.advent_helper import print_solutions
 # Methods #
 # # # # # #
 
-def generate_matrix(buttons: list, joltage_diagram: list) -> list:
-    matrix = []
-    for index, joltage in enumerate(joltage_diagram):
-        matrix_row = []
-        for button in buttons:
-            matrix_row.append(0) if index not in button else matrix_row.append(1)
-        matrix_row.append(joltage)
-        matrix.append(matrix_row)
+def create_machine(machine_manual: list[str]) -> dict:
+    return {
+        'buttons': [set(map(int, raw_button.strip('()').split(','))) for raw_button in machine_manual[1:-1]],
+        'joltage_requirements': list(map(int, machine_manual[-1].strip('{}').split(','))),
+        'light_requirements': {index for index, symbol in enumerate(list(machine_manual[0].strip('[]'))) if symbol == '#'},
+    }
 
-    return matrix
+def map_light_patterns(buttons: list[set]) -> dict[list[int], list[tuple[int]]]:
+    light_patterns = defaultdict(list)
+
+    for button_count in range(len(buttons) + 1):
+        for button_presses in combinations(buttons, button_count):
+            lights = set()
+
+            for button in button_presses:
+                lights ^= button
+
+            light_patterns[frozenset(lights)].append(button_presses)
+    
+    return light_patterns
+
+def configure_lights(light_requirements: set[int], light_patterns: dict[list[int], list[tuple[int]]]) -> int:
+    button_combinations = light_patterns[frozenset(light_requirements)]
+
+    return min([len(buttons) for buttons in button_combinations], default=0)
+
+#
+# Thanks to /u/tenthmascot and Josian Winslow for finding and explaining this non-algebraic solution.
+# https://reddit.com/comments/1pk87hl
+# https://aoc.winslowjosiah.com/solutions/2025/day/10/
+#
+# In short: 
+# An even amount of button presses returns a light to its initial state and an odd amount of button presses turns it on.
+# This means every joltage configuration can be abstracted to a light configuration, which can be solved without complicated Gauss-Jordan eliminations.
+# After turning on the lights for the odd joltages, the remaining joltage configures turns completely even, and can thus be halved.
+# [8, 5, 7, 20] -> [.##.] -> [8, 4, 6, 20] -> [4, 2, 3, 10] -> [..#.] -> [4, 2, 2, 10] -> [2, 1, 1, 5] -> etc.
+# Note: Remember to multiply the cumulative result of the divisions and subsequent button presses by the division factor (2 here).
+#
+def configure_joltages(joltage_requirements: list[int], light_patterns: dict[list[int], list[tuple[int]]]) -> int | None:
+    @cache
+    def get_minimum_button_presses(joltage_target: tuple[int]) -> int | None:
+        if not any(joltage_target):
+            return 0
+        
+        minimum_presses = None
+        lights = frozenset(index for index, level in enumerate(joltage_target) if level % 2 != 0)
+
+        for button_combination in light_patterns[lights]:
+            remaining_joltage = list(joltage_target)
+
+            for button in button_combination:
+                for joltage_index in button:
+                    remaining_joltage[joltage_index] -= 1
+
+            if any(joltage < 0 for joltage in remaining_joltage):
+                continue
+
+            half_joltage_target = tuple(joltage / 2 for joltage in remaining_joltage)
+            half_minimum_presses = get_minimum_button_presses(half_joltage_target)
+
+            if half_minimum_presses == None:
+                continue
+
+            total_presses = len(button_combination) + 2 * half_minimum_presses
+
+            if minimum_presses == None:
+                minimum_presses = total_presses
+            else:
+                minimum_presses = min(minimum_presses, total_presses)
+
+        return minimum_presses
+            
+    return get_minimum_button_presses(tuple(joltage_requirements))
 
 
 # # # # # # # # #
@@ -33,44 +98,11 @@ solution_two = 0
 # Part  One #
 # # # # # # #
 
-manual = [machine.split() for machine in raw_input.splitlines()]
-machines = []
-
-for entry in manual:
-    indicator_light_diagram = entry[0]
-    button_wiring = entry[1:-1]
-
-    machines.append({
-        'lights': [False] * len(indicator_light_diagram.strip('[]')),
-        'light_diagram': [light == '#' for light in list(indicator_light_diagram.strip('[]'))],
-        'buttons': [[int(wiring) for wiring in list(button.strip('()').split(','))] for button in button_wiring],
-    })
-
-initialization_log = []
+machines = [create_machine(machine_manual.split()) for machine_manual in raw_input.splitlines()]
 
 for machine in machines:
-    initial_lights = machine['lights'].copy()
-    iterations = [initial_lights]
-    queue = deque([(initial_lights, [])])
-
-    while queue:
-        current_lights, buttons_pressed = queue.popleft()
-
-        if current_lights == machine['light_diagram']:
-            initialization_log.append(len(buttons_pressed))
-            break
-
-        for next_button in machine['buttons']:
-            new_lights = current_lights.copy()
-
-            for light_index in next_button:
-                new_lights[light_index] = not new_lights[light_index]
-
-            if new_lights not in iterations:
-                iterations.append(new_lights)
-                queue.append((new_lights, buttons_pressed + [next_button]))
-
-solution_one = sum(initialization_log)
+    light_patterns = map_light_patterns(machine['buttons'])
+    solution_one += configure_lights(machine['light_requirements'], light_patterns)
 
 # # # # # # #
 # Interlude #
@@ -82,22 +114,11 @@ start_time_two = time()
 # Part  Two #
 # # # # # # #
 
-manual = [machine.split() for machine in raw_input.splitlines()]
-machines = []
-
-for entry in manual:
-    button_wiring = entry[1:-1]
-    joltage_requirements = entry[-1]
-
-    machines.append({
-        'buttons': [[int(wiring) for wiring in list(button.strip('()').split(','))] for button in button_wiring],
-        'joltage_diagram': [int(joltage) for joltage in joltage_requirements.strip('{}').split(',')],
-    })
+machines = [create_machine(machine_manual.split()) for machine_manual in raw_input.splitlines()]
 
 for machine in machines:
-    button_presses = [0] * len(machine['buttons'])
-    matrix = generate_matrix(machine['buttons'], machine['joltage_diagram'])
-    solution_two = 'I tried so hard, and got so far. But in the end, I gave up.'
+    light_patterns = map_light_patterns(machine['buttons'])
+    solution_two += configure_joltages(machine['joltage_requirements'], light_patterns)
 
 # # # # # # #
 # Epilogue  #

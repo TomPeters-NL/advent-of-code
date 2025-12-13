@@ -1,5 +1,4 @@
 from pathlib import Path
-from pprint import pprint
 from time import time
 from collections import deque
 
@@ -88,8 +87,6 @@ solution_two = 0
 # # # # # # #
 
 gifts, plots = retrieve_gifts_and_plots(raw_input.splitlines())
-
-pprint(gifts)
 
 for (plot_dimensions, gift_frequencies) in plots:
     if is_plot_too_small(plot_dimensions, gift_frequencies, gifts):
